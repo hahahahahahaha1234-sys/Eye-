@@ -61,8 +61,42 @@ button { cursor: pointer; border: none; font-family: inherit; transition: all 0.
 .bottom-left { bottom: 20px; left: 20px; border-right: none; border-top: none; }
 .bottom-right { bottom: 20px; right: 20px; border-left: none; border-top: none; }
 
-/* 截圖畫布 */
-.scanned-image-placeholder { width: 100%; aspect-ratio: 3/4; background: #111; margin: 20px 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--primary-cyan); }
-#snapshot-canvas { width: 100%; height: 100%; object-fit: cover; }
-#risk-level { color: #fff; font-size: 1.5rem; margin-bottom: 10px; }
-#risk-description { color: var(--text-main); line-height: 1.6; text-align: left; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; }
+/* --- 截圖畫布 (已縮小照片尺寸) --- */
+.scanned-image-placeholder { 
+    width: 60%;               /* 將照片寬度縮小至容器的 60% */
+    max-width: 240px;          /* 限制最大寬度為 240px */
+    aspect-ratio: 3/4; 
+    background: #111; 
+    margin: 15px auto 25px;    /* 置中並增加下方留白 */
+    border-radius: 8px; 
+    overflow: hidden; 
+    border: 1px solid var(--primary-cyan); 
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+#snapshot-canvas { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+}
+
+/* --- 分析結論字體 (已放大並加強排版) --- */
+#risk-level { 
+    color: #fff; 
+    font-size: 1.8rem;         /* 風險標題字體放大 (原本為 1.5rem) */
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-bottom: 15px; 
+}
+
+#risk-description { 
+    color: var(--text-main); 
+    font-size: 1.15rem;        /* 分析結論內文字體放大 (原本為預設約 0.95rem) */
+    line-height: 1.8;          /* 加大行距，大幅提升閱讀舒適度 */
+    font-weight: 500;
+    text-align: left; 
+    background: rgba(0, 0, 0, 0.4); 
+    padding: 20px;             /* 加大內邊距，讓文字區塊更氣派 */
+    border-radius: 8px; 
+    border-left: 4px solid var(--primary-cyan); /* 左側加上科技藍線，強調結論區塊 */
+}
