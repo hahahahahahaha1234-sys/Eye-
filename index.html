@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- 頂部導覽列 -->
     <header>
         <h1>Eyescan AI</h1>
         <div class="user-icon">設定</div>
@@ -17,26 +16,34 @@
         <!-- 掃描主畫面 -->
         <section id="scan-section">
             <div class="camera-container">
+                <!-- 負責顯示即時相機畫面 -->
+                <video id="camera-feed" autoplay playsinline></video>
+                
+                <!-- 疊加在畫面上的對焦輔助線 -->
                 <div class="focus-guide">
                     <div class="eye-box left-eye"></div>
                     <div class="eye-box right-eye"></div>
                 </div>
+                <!-- 提示文字[cite: 1] -->
                 <p class="instruction">請將 1 元色彩校正貼紙貼於眼眶下緣，並平視鏡頭</p>
             </div>
             
             <div class="action-area">
-                <button id="start-scan-btn" class="primary-btn">START EYE SCAN (開始掃描)</button>
+                <button id="start-scan-btn" class="primary-btn">START EYE SCAN (拍攝與分析)</button>
                 <p class="sub-text">AI 將進行影像校正與眼部特徵分析</p>
             </div>
         </section>
 
-        <!-- 檢測結果畫面 (預設隱藏) -->
+        <!-- 檢測結果畫面 -->
         <section id="result-section" class="hidden">
             <div class="result-card">
                 <h2 id="risk-level">分析完成</h2>
+                
                 <div class="scanned-image-placeholder">
-                    <span>眼部 ROI 擷取畫面</span>
+                    <!-- 負責顯示拍下的定格畫面 -->
+                    <canvas id="snapshot-canvas"></canvas>
                 </div>
+                
                 <p id="risk-description">綜合比對眼部特徵與疾病資料庫中...</p>
                 
                 <div class="action-area">
