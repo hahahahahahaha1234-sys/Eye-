@@ -1,8 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 取得 DOM 元素
+    // 取得所有 DOM 元素
     const introSection = document.getElementById('intro-section');
     const scanSection = document.getElementById('scan-section');
     const resultSection = document.getElementById('result-section');
+    
     const backHomeBtn = document.getElementById('back-home-btn');
     const goToScanBtn = document.getElementById('go-to-scan-btn');
     const startScanBtn = document.getElementById('start-scan-btn');
@@ -16,31 +17,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const snapshotCanvas = document.getElementById('snapshot-canvas');
     const snapshotCtx = snapshotCanvas.getContext('2d');
     
-    // 初始化 AI 引擎 (來自 ai_engine/analyzer.js)
-    const analyzer = new FaceAnalyzer(videoElement, overlayCanvas);
+    // 實體化我們在 analyzer.js 中建立的 AI 引擎
+    const analyzer = new window.FaceAnalyzer(videoElement, overlayCanvas);
 
-    // 1. 進入相機掃描頁面
+    // 啟動掃描 (進入相機頁面)
     goToScanBtn.addEventListener('click', () => {
         introSection.classList.add('hidden');
         scanSection.classList.remove('hidden');
         backHomeBtn.classList.remove('hidden');
-        analyzer.start(); // 呼叫 AI 引擎啟動
-        window.scrollTo(0, 0);
+        analyzer.start(); // 啟動相機與 AI 引擎
     });
 
-    // 2. 退回首頁
+    // 返回首頁
     backHomeBtn.addEventListener('click', () => {
-        analyzer.stop(); // 呼叫 AI 引擎停止
+        analyzer.stop();
         scanSection.classList.add('hidden');
         resultSection.classList.add('hidden');
         introSection.classList.remove('hidden');
         backHomeBtn.classList.add('hidden');
-        window.scrollTo(0, 0);
     });
 
-    // 3. 點擊擷取並要求 AI 分析
+    // 點擊「擷取特徵並分析」
     startScanBtn.addEventListener('click', () => {
-        // 先取得 AI 引擎的分析報告
+        // 1. 要求 AI 引擎計算 EAR 報告
         const report = analyzer.getAnalysisReport();
         
         if (report.error) {
@@ -48,32 +47,40 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 進行相機截圖處理
+        startScanBtn.innerText = "特徵點分析中...";
+
+        // 2. 處理截圖 (將影片與特徵網格畫在同一個畫布上)
         snapshotCanvas.width = videoElement.videoWidth || 640;
         snapshotCanvas.height = videoElement.videoHeight || 480;
+        
+        // 鏡像處理，讓截出來的圖跟看到的一樣
         snapshotCtx.save();
         snapshotCtx.scale(-1, 1);
         snapshotCtx.translate(-snapshotCanvas.width, 0);
         snapshotCtx.drawImage(videoElement, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
         snapshotCtx.restore();
-        snapshotCtx.drawImage(overlayCanvas, 0, 0); // 疊加網格特徵點
+        // 疊加 MediaPipe 畫好的特徵點網格
+        snapshotCtx.drawImage(overlayCanvas, 0, 0); 
 
-        startScanBtn.innerText = "特徵點分析中...";
-        
-        // 畫面過渡與呈現結果
+        // 3. 延遲 1 秒模擬運算感，隨後顯示結果
         setTimeout(() => {
             analyzer.stop();
             scanSection.classList.add('hidden');
             resultSection.classList.remove('hidden');
             startScanBtn.innerText = "擷取特徵並分析";
 
-            // 將 AI 報告顯示到畫面上
             riskLevelText.innerText = report.level;
             riskDescText.innerText = report.desc;
-        }, 1200);
+            
+            // 依風險程度改變標題顏色
+            if(report.level.includes("高風險")) riskLevelText.style.color = "#ff4444";
+            else if(report.level.includes("中風險")) riskLevelText.style.color = "#ffcc00";
+            else riskLevelText.style.color = "#00ffcc";
+
+        }, 1000);
     });
 
-    // 4. 重新掃描
+    // 重新掃描
     resetBtn.addEventListener('click', () => {
         resultSection.classList.add('hidden');
         scanSection.classList.remove('hidden');
