@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ColorSafe EYE-AI 預檢系統</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 頂部導覽列 -->
+    <header>
+        <h1>Eyescan AI</h1>
+        <div class="user-icon">設定</div>
+    </header>
+
+    <main>
+        <!-- 掃描主畫面 -->
+        <section id="scan-section">
+            <div class="camera-container">
+                <div class="focus-guide">
+                    <div class="eye-box left-eye"></div>
+                    <div class="eye-box right-eye"></div>
+                </div>
+                <p class="instruction">請將 1 元色彩校正貼紙貼於眼眶下緣，並平視鏡頭</p>
+            </div>
+            
+            <div class="action-area">
+                <button id="start-scan-btn" class="primary-btn">START EYE SCAN (開始掃描)</button>
+                <p class="sub-text">AI 將進行影像校正與眼部特徵分析</p>
+            </div>
+        </section>
+
+        <!-- 檢測結果畫面 (預設隱藏) -->
+        <section id="result-section" class="hidden">
+            <div class="result-card">
+                <h2 id="risk-level">分析完成</h2>
+                <div class="scanned-image-placeholder">
+                    <span>眼部 ROI 擷取畫面</span>
+                </div>
+                <p id="risk-description">綜合比對眼部特徵與疾病資料庫中...</p>
+                
+                <div class="action-area">
+                    <button id="clinic-btn" class="secondary-btn">預約診所 / 尋找導航</button>
+                    <button id="reset-btn" class="outline-btn">重新掃描</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
