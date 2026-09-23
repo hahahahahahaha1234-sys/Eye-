@@ -1,156 +1,76 @@
-/* 全局設定 */
-body {
-    background-color: #000000;
-    color: #ffffff;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    text-align: center;
-}
+document.addEventListener('DOMContentLoaded', () => {
+    const scanSection = document.getElementById('scan-section');
+    const resultSection = document.getElementById('result-section');
+    const startScanBtn = document.getElementById('start-scan-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const riskLevelText = document.getElementById('risk-level');
+    const riskDescText = document.getElementById('risk-description');
+    
+    // 相機相關元件
+    const video = document.getElementById('camera-feed');
+    const canvas = document.getElementById('snapshot-canvas');
+    const ctx = canvas.getContext('2d');
+    let stream = null;
 
-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 30px;
-    border-bottom: 1px solid #333333;
-}
+    // 模擬計畫書中的三種風險分級[cite: 1]
+    const mockResults = [
+        { level: "高風險 (HIGH RISK)", desc: "辨識到疑似發炎特徵。請尋求醫療協助。" },
+        { level: "中風險 (MEDIUM RISK)", desc: "分析顯示有異常關注點。建議預約診所。" },
+        { level: "低風險 (LOW RISK)", desc: "判定眼部結構健康。請維持日常保養。" }
+    ];
 
-header h1 {
-    font-size: 24px;
-    margin: 0;
-    letter-spacing: 2px;
-}
+    // 啟動相機函數
+    async function startCamera() {
+        try {
+            // 請求相機權限，優先使用手機的後置鏡頭 (environment)
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }
+            });
+            video.srcObject = stream;
+        } catch (err) {
+            console.error("相機啟動失敗:", err);
+            alert("無法存取相機，請確認設備是否支援或已給予瀏覽器相機權限。");
+        }
+    }
 
-/* 相機與掃描區 */
-.camera-container {
-    margin: 40px auto;
-    width: 85%;
-    max-width: 400px;
-    height: 450px;
-    border: 2px dashed #ffffff;
-    border-radius: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    overflow: hidden; /* 確保相機畫面不會超出圓角邊框 */
-}
+    // 關閉相機函數 (節省設備資源)
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    }
 
-/* 即時相機畫面 */
-#camera-feed {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 1; /* 墊在底層 */
-}
+    // 網頁載入時自動啟動相機
+    startCamera();
 
-/* 將輔助線和文字拉到相機畫面上層 */
-.focus-guide {
-    display: flex;
-    gap: 20px;
-    z-index: 2;
-}
+    // 點擊開始掃描 (拍照並分析)
+    startScanBtn.addEventListener('click', () => {
+        // 1. 將當下的 video 畫面畫到 canvas 上 (截圖)
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-.eye-box {
-    width: 100px;
-    height: 60px;
-    border: 1px solid #ffffff; /* 改為純白更清楚 */
-    border-radius: 50%;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5); /* 增加陰影以防背景太白看不見 */
-}
+        // 2. 改變按鈕狀態
+        startScanBtn.innerText = "影像處理中...";
+        
+        // 3. 模擬等待 AI 運算時間 (2秒)
+        setTimeout(() => {
+            stopCamera(); // 進入結果頁前關閉相機
+            scanSection.classList.add('hidden');
+            resultSection.classList.remove('hidden');
+            startScanBtn.innerText = "START EYE SCAN (拍攝與分析)";
 
-.instruction {
-    position: absolute;
-    bottom: 20px;
-    font-size: 14px;
-    color: #ffffff;
-    background-color: rgba(0, 0, 0, 0.6); /* 加上半透明黑底讓文字清晰 */
-    padding: 8px 12px;
-    border-radius: 8px;
-    width: 80%;
-    z-index: 2;
-}
+            // 隨機抽選一種風險結果做展示
+            const randomResult = mockResults[Math.floor(Math.random() * mockResults.length)];
+            riskLevelText.innerText = `結果分析: ${randomResult.level}`;
+            riskDescText.innerText = randomResult.desc;
+        }, 2000);
+    });
 
-/* 按鈕設計 */
-.action-area {
-    margin-top: 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-}
-
-.primary-btn {
-    background-color: #ffffff;
-    color: #000000;
-    border: none;
-    padding: 15px 30px;
-    font-size: 16px;
-    font-weight: bold;
-    border-radius: 30px;
-    cursor: pointer;
-    width: 80%;
-    max-width: 300px;
-    transition: 0.3s;
-}
-
-.primary-btn:hover { background-color: #cccccc; }
-
-.secondary-btn {
-    background-color: #333333;
-    color: #ffffff;
-    border: none;
-    padding: 15px 30px;
-    font-size: 14px;
-    border-radius: 10px;
-    cursor: pointer;
-    width: 80%;
-    max-width: 300px;
-}
-
-.outline-btn {
-    background-color: transparent;
-    color: #ffffff;
-    border: 1px solid #ffffff;
-    padding: 10px 30px;
-    font-size: 14px;
-    border-radius: 10px;
-    cursor: pointer;
-}
-
-.sub-text { font-size: 12px; color: #888888; }
-
-/* 結果卡片區 */
-.hidden { display: none !important; }
-
-.result-card {
-    margin: 40px auto;
-    width: 85%;
-    max-width: 400px;
-    border: 1px solid #555555;
-    border-radius: 20px;
-    padding: 30px 20px;
-    background-color: #0a0a0a;
-}
-
-/* 定格畫面畫布 */
-.scanned-image-placeholder {
-    width: 100%;
-    height: 180px;
-    background-color: #1a1a1a;
-    border: 1px solid #333333;
-    border-radius: 10px;
-    margin: 20px 0;
-    overflow: hidden;
-}
-
-#snapshot-canvas {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* 讓拍下的畫面填滿框框 */
-}
+    // 點擊重新掃描
+    resetBtn.addEventListener('click', () => {
+        resultSection.classList.add('hidden');
+        scanSection.classList.remove('hidden');
+        startCamera(); // 重新啟動相機
+    });
+});
