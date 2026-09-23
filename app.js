@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const snapshotCanvas = document.getElementById('snapshot-canvas');
     const snapshotCtx = snapshotCanvas.getContext('2d');
     
-    // 實體化我們在 analyzer.js 中建立的 AI 引擎
+    // 實體化 AI 引擎
     const analyzer = new window.FaceAnalyzer(videoElement, overlayCanvas);
 
     // 啟動掃描 (進入相機頁面)
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
         introSection.classList.add('hidden');
         scanSection.classList.remove('hidden');
         backHomeBtn.classList.remove('hidden');
-        analyzer.start(); // 啟動相機與 AI 引擎
+        analyzer.start();
     });
 
     // 返回首頁
@@ -49,20 +49,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         startScanBtn.innerText = "特徵點分析中...";
 
-        // 2. 處理截圖 (將影片與特徵網格畫在同一個畫布上)
+        // 2. 處理截圖 (僅擷取純淨照片，不翻面、不疊加網格)
         snapshotCanvas.width = videoElement.videoWidth || 640;
         snapshotCanvas.height = videoElement.videoHeight || 480;
-        
-        // 鏡像處理，讓截出來的圖跟看到的一樣
-        snapshotCtx.save();
-        snapshotCtx.scale(-1, 1);
-        snapshotCtx.translate(-snapshotCanvas.width, 0);
         snapshotCtx.drawImage(videoElement, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
-        snapshotCtx.restore();
-        // 疊加 MediaPipe 畫好的特徵點網格
-        snapshotCtx.drawImage(overlayCanvas, 0, 0); 
 
-        // 3. 延遲 1 秒模擬運算感，隨後顯示結果
+        // 3. 延遲 1 秒顯示結果
         setTimeout(() => {
             analyzer.stop();
             scanSection.classList.add('hidden');
