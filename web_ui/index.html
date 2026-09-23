@@ -6,20 +6,19 @@
     <title>EYE-AI 遠距眼部預檢系統</title>
     <link rel="stylesheet" href="style.css">
     
-    <!-- 引入 MediaPipe Face Mesh 相關函式庫 -->
+    <!-- 引入 MediaPipe Face Mesh CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 </head>
 <body>
-    <div class="bg-grid"></div>
-    <div class="bg-glow"></div>
+    <div class="bg-grid"></div><div class="bg-glow"></div>
 
     <header>
         <div class="header-left">
             <button id="back-home-btn" class="icon-btn hidden"><span class="geo-icon">◇</span> 首頁說明</button>
         </div>
-        <h1 class="logo">EYE-AI <span class="badge">v2.0</span></h1>
+        <h1 class="logo">EYE-AI <span class="badge">v2.1</span></h1>
         <div class="header-right"><span class="status-dot"></span></div>
     </header>
 
@@ -27,21 +26,18 @@
         <!-- 頁面 1：首頁說明 -->
         <section id="intro-section" class="page-section">
             <div class="intro-container">
-                <div class="hero-geo">
-                    <div class="circle-outer"></div>
-                    <div class="circle-inner"></div>
-                </div>
+                <div class="hero-geo"><div class="circle-outer"></div><div class="circle-inner"></div></div>
                 <h2>遠距醫療初篩系統</h2>
                 <p class="intro-desc">整合 AI 臉部特徵網格與色彩校正技術，協助您進行居家高頻率的眼部追蹤監測。</p>
                 <div class="geo-divider"><span>◆</span></div>
                 
                 <h3>常見眼部疾病特徵與處理指引</h3>
                 <div class="disease-grid">
-                    <div class="disease-card"><div class="card-tag">01</div><h4>急性結膜炎</h4><p>眼白充血、刺痛。請停戴隱形眼鏡，冰敷並尋求醫囑。</p></div>
-                    <div class="disease-card"><div class="card-tag">02</div><h4>黃疸 (肝膽異常)</h4><p>眼白泛黃。請即刻停止飲酒，盡快至消化內科抽血檢查。</p></div>
-                    <div class="disease-card"><div class="card-tag">03</div><h4>高血脂 (角膜老年環)</h4><p>角膜邊緣現灰白環狀。預約內科抽血檢查血脂與心血管。</p></div>
-                    <div class="disease-card"><div class="card-tag">04</div><h4>白內障</h4><p>瞳孔中央混濁、畏光。外出務必配戴抗UV太陽眼鏡。</p></div>
-                    <div class="disease-card"><div class="card-tag">05</div><h4>針眼 (麥粒腫)</h4><p>眼瞼邊緣紅腫疼痛。用40°C溫毛巾熱敷促進油脂融化。</p></div>
+                    <div class="disease-card"><div class="card-tag">01</div><h4>🔴 急性結膜炎</h4><p>眼白充血、刺痛。請停戴隱形眼鏡，冰敷並尋求醫囑。</p></div>
+                    <div class="disease-card"><div class="card-tag">02</div><h4>🟡 黃疸 (肝膽異常)</h4><p>眼白泛黃。請即刻停止飲酒，盡快至消化內科抽血檢查。</p></div>
+                    <div class="disease-card"><div class="card-tag">03</div><h4>⚪ 高血脂 (角膜老年環)</h4><p>角膜邊緣現灰白環狀。預約內科抽血檢查血脂與心血管。</p></div>
+                    <div class="disease-card"><div class="card-tag">04</div><h4>🌫️ 白內障</h4><p>瞳孔中央混濁、畏光。外出務必配戴抗UV太陽眼鏡。</p></div>
+                    <div class="disease-card"><div class="card-tag">05</div><h4>💢 針眼 (麥粒腫)</h4><p>眼瞼邊緣紅腫疼痛。用40°C溫毛巾熱敷促進油脂融化。</p></div>
                 </div>
 
                 <div class="action-area">
@@ -54,16 +50,11 @@
         <section id="scan-section" class="page-section hidden">
             <div class="camera-wrapper">
                 <div class="camera-container">
-                    <!-- 即時相機畫面 -->
                     <video id="camera-feed" autoplay playsinline></video>
-                    
-                    <!-- MediaPipe 特徵點繪製圖層 -->
                     <canvas id="tracking-overlay"></canvas>
                     
-                    <div class="hud-bracket top-left"></div>
-                    <div class="hud-bracket top-right"></div>
-                    <div class="hud-bracket bottom-left"></div>
-                    <div class="hud-bracket bottom-right"></div>
+                    <div class="hud-bracket top-left"></div><div class="hud-bracket top-right"></div>
+                    <div class="hud-bracket bottom-left"></div><div class="hud-bracket bottom-right"></div>
                     
                     <p class="instruction">AI 正在鎖定眼部特徵，請將校正貼紙貼於眼眶下緣</p>
                 </div>
@@ -80,7 +71,6 @@
             <div class="result-card">
                 <div class="geo-header"><span class="geo-square"></span><h2 id="risk-level">分析完成</h2></div>
                 <div class="scanned-image-placeholder">
-                    <!-- 儲存拍下的原圖與特徵點 -->
                     <canvas id="snapshot-canvas"></canvas>
                 </div>
                 <p id="risk-description">綜合比對眼部特徵與疾病資料庫中...</p>
@@ -91,6 +81,9 @@
             </div>
         </section>
     </main>
-    <script src="script.js"></script>
+    
+    <!-- 先引入 AI 引擎，再引入 UI 邏輯 -->
+    <script src="../ai_engine/analyzer.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
