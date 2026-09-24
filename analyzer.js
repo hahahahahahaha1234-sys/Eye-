@@ -1,166 +1,738 @@
-// RGB 轉 HSV 工具函式
-function rgbToHsv(r, g, b) {
-    r /= 255; g /= 255; b /= 255;
-    let max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h, s, v = max;
-    let d = max - min;
-    s = max === 0 ? 0 : d / max;
-    
-    if (max === min) {
-        h = 0; 
-    } else {
-        switch (max) {
-            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h = (b - r) / d + 2; break;
-            case b: h = (r - g) / d + 4; break;
-        }
-        h /= 6;
+class EyeAnalyzer {
+
+    constructor(video, overlayCanvas) {
+
+        this.video = video;
+        this.canvas = overlayCanvas;
+        this.ctx = this.canvas.getContext("2d");
+
+        this.faceMesh = null;
+
+        this.latestResults = null;
+
+        this.ready = false;
+
+        this.eyeIndices = {
+            left: {
+                outer: 33,
+                inner: 133,
+                top: 159,
+                bottom: 145
+            },
+
+            right: {
+                outer: 263,
+                inner: 362,
+                top: 386,
+                bottom: 374
+            }
+        };
+
+        this.irisIndices = {
+            left: [468, 469, 470, 471, 472],
+            right: [473, 474, 475, 476, 477]
+        };
     }
-    return [h * 360, s * 100, v * 100];
-}
 
-class FaceAnalyzer {
-    constructor(videoElement, overlayCanvas) {
-        this.videoElement = videoElement;
-        this.overlayCanvas = overlayCanvas;
-        this.overlayCtx = overlayCanvas.getContext('2d');
-        this.lastLandmarks = null;
-        
-        // 建立背景分析用的隱藏畫布
-        this.analysisCanvas = document.createElement('canvas');
-        this.analysisCtx = this.analysisCanvas.getContext('2d', { willReadFrequently: true });
 
-        this.faceMesh = new FaceMesh({locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-        }});
-        
+    async init() {
+
+        this.faceMesh = new FaceMesh({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+            }
+        });
+
         this.faceMesh.setOptions({
             maxNumFaces: 1,
-            refineLandmarks: true, // 開啟以取得精準的眼睛與虹膜網格
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.7
+            refineLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
         });
-        
-        this.faceMesh.onResults(this.onResults.bind(this));
-        
-        this.camera = new Camera(this.videoElement, {
-            onFrame: async () => {
-                await this.faceMesh.send({image: this.videoElement});
-            },
-            width: 640,
-            height: 480
-        });
+
+        this.faceMesh.onResults(
+            (results) => this.handleResults(results)
+        );
+
+        this.ready = true;
     }
 
-    start() {
-        this.camera.start();
-    }
 
-    stop() {
-        this.camera.stop();
-        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
-    }
+    async processFrame() {
 
-    onResults(results) {
-        this.overlayCanvas.width = this.videoElement.videoWidth;
-        this.overlayCanvas.height = this.videoElement.videoHeight;
-        this.overlayCtx.save();
-        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
-
-        if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-            this.lastLandmarks = results.multiFaceLandmarks[0];
-            
-            // 繪製乾淨的高科技眼部網格
-            drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_RIGHT_EYE, {color: '#00ffcc', lineWidth: 1.5});
-            drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_LEFT_EYE, {color: '#00ffcc', lineWidth: 1.5});
-            drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_RIGHT_IRIS, {color: '#0088ff', lineWidth: 1.5});
-            drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_LEFT_IRIS, {color: '#0088ff', lineWidth: 1.5});
-        } else {
-            this.lastLandmarks = null;
-        }
-        this.overlayCtx.restore();
-    }
-
-    // 分析眼部色彩並產生報告
-    getAnalysisReport() {
-        if (!this.lastLandmarks) {
-            return { error: true, message: "未偵測到清晰的臉部特徵，請確保光線充足並平視鏡頭。" };
+        if (!this.ready) {
+            return;
         }
 
-        const width = this.videoElement.videoWidth;
-        const height = this.videoElement.videoHeight;
-        this.analysisCanvas.width = width;
-        this.analysisCanvas.height = height;
-        
-        // 將當前影像畫上隱藏畫布
-        this.analysisCtx.drawImage(this.videoElement, 0, 0, width, height);
+        await this.faceMesh.send({
+            image: this.video
+        });
+    }
 
-        // 取左眼與右眼的邊界框 (簡化版：取右眼點位 33 到 133 之間的區域)
-        const rightEyeLeft = this.lastLandmarks[133].x * width;
-        const rightEyeRight = this.lastLandmarks[33].x * width;
-        const rightEyeTop = this.lastLandmarks[159].y * height;
-        const rightEyeBottom = this.lastLandmarks[145].y * height;
 
-        const eyeWidth = Math.abs(rightEyeRight - rightEyeLeft);
-        const eyeHeight = Math.abs(rightEyeBottom - rightEyeTop);
-        const startX = Math.min(rightEyeLeft, rightEyeRight);
-        
-        // 擷取右眼的像素數據
-        const eyeImageData = this.analysisCtx.getImageData(startX, rightEyeTop, eyeWidth, eyeHeight);
-        const pixels = eyeImageData.data;
-        
-        let redPixelCount = 0;
-        let yellowPixelCount = 0;
-        let validScleraCount = 0;
+    handleResults(results) {
 
-        for (let i = 0; i < pixels.length; i += 4) {
-            const r = pixels[i];
-            const g = pixels[i+1];
-            const b = pixels[i+2];
+        this.latestResults = results;
 
-            const [h, s, v] = rgbToHsv(r, g, b);
+        this.resizeCanvas();
 
-            // 過濾掉黑色瞳孔、虹膜與反光點 (僅保留明度適中、飽和度不過低的眼白區域)
-            if (v > 30 && v < 95 && s > 5) {
-                validScleraCount++;
-                
-                // 偵測血絲 (紅色區間：色相接近 0 或 360，具備一定飽和度)
-                if ((h < 15 || h > 345) && s > 35) {
-                    redPixelCount++;
+        this.ctx.clearRect(
+            0,
+            0,
+            this.canvas.width,
+            this.canvas.height
+        );
+
+        if (
+            !results.multiFaceLandmarks ||
+            results.multiFaceLandmarks.length === 0
+        ) {
+
+            return;
+        }
+
+        const landmarks =
+            results.multiFaceLandmarks[0];
+
+        this.drawFace(landmarks);
+        this.drawEyeRegions(landmarks);
+    }
+
+
+    resizeCanvas() {
+
+        if (
+            this.canvas.width !== this.video.videoWidth ||
+            this.canvas.height !== this.video.videoHeight
+        ) {
+
+            this.canvas.width =
+                this.video.videoWidth;
+
+            this.canvas.height =
+                this.video.videoHeight;
+        }
+    }
+
+
+    drawFace(landmarks) {
+
+        if (
+            typeof drawConnectors !== "undefined" &&
+            typeof FACEMESH_TESSELATION !== "undefined"
+        ) {
+
+            drawConnectors(
+                this.ctx,
+                landmarks,
+                FACEMESH_TESSELATION,
+                {
+                    color: "rgba(0, 220, 255, 0.12)",
+                    lineWidth: 0.5
                 }
-                
-                // 偵測黃疸 (黃色區間：色相介於 30 到 60 之間)
-                if (h > 35 && h < 55 && s > 25) {
-                    yellowPixelCount++;
-                }
+            );
+        }
+    }
+
+
+    drawEyeRegions(landmarks) {
+
+        const eyes = [
+            this.eyeIndices.left,
+            this.eyeIndices.right
+        ];
+
+        eyes.forEach((eye) => {
+
+            const points = [
+                landmarks[eye.outer],
+                landmarks[eye.inner],
+                landmarks[eye.top],
+                landmarks[eye.bottom]
+            ];
+
+            points.forEach(point => {
+
+                const x =
+                    point.x * this.canvas.width;
+
+                const y =
+                    point.y * this.canvas.height;
+
+                this.ctx.beginPath();
+
+                this.ctx.arc(
+                    x,
+                    y,
+                    3,
+                    0,
+                    Math.PI * 2
+                );
+
+                this.ctx.fillStyle = "#00eaff";
+
+                this.ctx.fill();
+            });
+
+            const box =
+                this.getEyeBoundingBox(
+                    landmarks,
+                    eye
+                );
+
+            this.ctx.strokeStyle =
+                "#00eaff";
+
+            this.ctx.lineWidth = 2;
+
+            this.ctx.strokeRect(
+                box.x,
+                box.y,
+                box.width,
+                box.height
+            );
+        });
+    }
+
+
+    getEyeBoundingBox(landmarks, eye) {
+
+        const ids = [
+            eye.outer,
+            eye.inner,
+            eye.top,
+            eye.bottom
+        ];
+
+        const points = ids.map(
+            id => landmarks[id]
+        );
+
+        const xs =
+            points.map(p => p.x);
+
+        const ys =
+            points.map(p => p.y);
+
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+
+        const paddingX =
+            (maxX - minX) * 0.35;
+
+        const paddingY =
+            (maxY - minY) * 0.6;
+
+        return {
+
+            x:
+                (minX - paddingX)
+                * this.canvas.width,
+
+            y:
+                (minY - paddingY)
+                * this.canvas.height,
+
+            width:
+                (maxX - minX + paddingX * 2)
+                * this.canvas.width,
+
+            height:
+                (maxY - minY + paddingY * 2)
+                * this.canvas.height
+        };
+    }
+
+
+    getNormalizedEyeBox(landmarks, eye) {
+
+        const ids = [
+            eye.outer,
+            eye.inner,
+            eye.top,
+            eye.bottom
+        ];
+
+        const points =
+            ids.map(id => landmarks[id]);
+
+        const xs =
+            points.map(p => p.x);
+
+        const ys =
+            points.map(p => p.y);
+
+        const minX = Math.max(
+            0,
+            Math.min(...xs) - 0.035
+        );
+
+        const maxX = Math.min(
+            1,
+            Math.max(...xs) + 0.035
+        );
+
+        const minY = Math.max(
+            0,
+            Math.min(...ys) - 0.045
+        );
+
+        const maxY = Math.min(
+            1,
+            Math.max(...ys) + 0.045
+        );
+
+        return {
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY
+        };
+    }
+
+
+    getAverageRGB(imageData) {
+
+        let r = 0;
+        let g = 0;
+        let b = 0;
+
+        let count = 0;
+
+        for (
+            let i = 0;
+            i < imageData.data.length;
+            i += 4
+        ) {
+
+            r += imageData.data[i];
+            g += imageData.data[i + 1];
+            b += imageData.data[i + 2];
+
+            count++;
+        }
+
+        if (count === 0) {
+            return {
+                r: 0,
+                g: 0,
+                b: 0
+            };
+        }
+
+        return {
+            r: r / count,
+            g: g / count,
+            b: b / count
+        };
+    }
+
+
+    rgbToHsv(r, g, b) {
+
+        r /= 255;
+        g /= 255;
+        b /= 255;
+
+        const max =
+            Math.max(r, g, b);
+
+        const min =
+            Math.min(r, g, b);
+
+        const delta = max - min;
+
+        let h = 0;
+
+        if (delta !== 0) {
+
+            if (max === r) {
+
+                h =
+                    60 *
+                    (((g - b) / delta) % 6);
+
+            } else if (max === g) {
+
+                h =
+                    60 *
+                    (((b - r) / delta) + 2);
+
+            } else {
+
+                h =
+                    60 *
+                    (((r - g) / delta) + 4);
             }
         }
 
-        // 計算異常像素比例
-        const redRatio = validScleraCount > 0 ? (redPixelCount / validScleraCount) * 100 : 0;
-        const yellowRatio = validScleraCount > 0 ? (yellowPixelCount / validScleraCount) * 100 : 0;
+        if (h < 0) {
+            h += 360;
+        }
 
-        // 根據比例輸出臨床初篩結果
-        if (yellowRatio > 15) {
+        const s =
+            max === 0
+                ? 0
+                : delta / max;
+
+        return {
+            h,
+            s: s * 100,
+            v: max * 100
+        };
+    }
+
+
+    rgbToLab(r, g, b) {
+
+        r /= 255;
+        g /= 255;
+        b /= 255;
+
+        r = r > 0.04045
+            ? Math.pow(
+                (r + 0.055) / 1.055,
+                2.4
+            )
+            : r / 12.92;
+
+        g = g > 0.04045
+            ? Math.pow(
+                (g + 0.055) / 1.055,
+                2.4
+            )
+            : g / 12.92;
+
+        b = b > 0.04045
+            ? Math.pow(
+                (b + 0.055) / 1.055,
+                2.4
+            )
+            : b / 12.92;
+
+        r *= 100;
+        g *= 100;
+        b *= 100;
+
+        const x =
+            (r * 0.4124 +
+                g * 0.3576 +
+                b * 0.1805) / 95.047;
+
+        const y =
+            (r * 0.2126 +
+                g * 0.7152 +
+                b * 0.0722) / 100;
+
+        const z =
+            (r * 0.0193 +
+                g * 0.1192 +
+                b * 0.9505) / 108.883;
+
+        const f = (value) => {
+
+            return value > 0.008856
+                ? Math.pow(value, 1 / 3)
+                : 7.787 * value + 16 / 116;
+        };
+
+        const fx = f(x);
+        const fy = f(y);
+        const fz = f(z);
+
+        return {
+            L: 116 * fy - 16,
+            a: 500 * (fx - fy),
+            b: 200 * (fy - fz)
+        };
+    }
+
+
+    analyzeRegion(box) {
+
+        const canvas =
+            document.createElement("canvas");
+
+        canvas.width = 200;
+        canvas.height = 150;
+
+        const ctx =
+            canvas.getContext("2d");
+
+        ctx.drawImage(
+            this.video,
+            box.x * this.video.videoWidth,
+            box.y * this.video.videoHeight,
+            box.width * this.video.videoWidth,
+            box.height * this.video.videoHeight,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+        const imageData =
+            ctx.getImageData(
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            );
+
+        const rgb =
+            this.getAverageRGB(imageData);
+
+        const hsv =
+            this.rgbToHsv(
+                rgb.r,
+                rgb.g,
+                rgb.b
+            );
+
+        const lab =
+            this.rgbToLab(
+                rgb.r,
+                rgb.g,
+                rgb.b
+            );
+
+        return {
+            rgb,
+            hsv,
+            lab
+        };
+    }
+
+
+    calculateRedRatio(box) {
+
+        const canvas =
+            document.createElement("canvas");
+
+        canvas.width = 120;
+        canvas.height = 80;
+
+        const ctx =
+            canvas.getContext("2d");
+
+        ctx.drawImage(
+            this.video,
+            box.x * this.video.videoWidth,
+            box.y * this.video.videoHeight,
+            box.width * this.video.videoWidth,
+            box.height * this.video.videoHeight,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+        const imageData =
+            ctx.getImageData(
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            );
+
+        let redPixels = 0;
+        let totalPixels = 0;
+
+        for (
+            let i = 0;
+            i < imageData.data.length;
+            i += 4
+        ) {
+
+            const r = imageData.data[i];
+            const g = imageData.data[i + 1];
+            const b = imageData.data[i + 2];
+
+            const hsv =
+                this.rgbToHsv(r, g, b);
+
+            if (
+                (hsv.h < 25 || hsv.h > 340) &&
+                hsv.s > 30 &&
+                hsv.v > 25
+            ) {
+
+                redPixels++;
+            }
+
+            totalPixels++;
+        }
+
+        return totalPixels === 0
+            ? 0
+            : (redPixels / totalPixels) * 100;
+    }
+
+
+    getAnalysisReport() {
+
+        if (
+            !this.latestResults ||
+            !this.latestResults.multiFaceLandmarks ||
+            !this.latestResults.multiFaceLandmarks.length
+        ) {
+
             return {
-                error: false,
-                level: "中高風險：鞏膜泛黃",
-                desc: `系統偵測到眼白區塊黃色像素達 ${yellowRatio.toFixed(1)}%。這可能是肝膽系統過勞、黃疸或膽紅素偏高的初期徵兆。建議確保充足睡眠並減少飲酒，若持續未改善請預約消化內科抽血檢查。`
-            };
-        } else if (redRatio > 20) {
-            return {
-                error: false,
-                level: "中風險：結膜充血",
-                desc: `系統偵測到眼白微血管紅色擴張比例達 ${redRatio.toFixed(1)}%。可能為急性結膜炎、過敏或眼部極度疲勞。請暫時停戴隱形眼鏡，若伴隨刺痛感請盡速就醫。`
-            };
-        } else {
-            return {
-                error: false,
-                level: "低風險：狀態良好",
-                desc: `目前未偵測到明顯的色彩異常 (紅/黃像素比例皆在安全範圍內)。特徵點追蹤顯示您的眼部外觀健康，請繼續保持良好的用眼習慣。`
+                quality: {
+                    faceDetected: false,
+                    eyeDetected: false
+                }
             };
         }
+
+        const landmarks =
+            this.latestResults
+                .multiFaceLandmarks[0];
+
+        const leftBox =
+            this.getNormalizedEyeBox(
+                landmarks,
+                this.eyeIndices.left
+            );
+
+        const rightBox =
+            this.getNormalizedEyeBox(
+                landmarks,
+                this.eyeIndices.right
+            );
+
+        const left =
+            this.analyzeRegion(leftBox);
+
+        const right =
+            this.analyzeRegion(rightBox);
+
+        const leftRed =
+            this.calculateRedRatio(leftBox);
+
+        const rightRed =
+            this.calculateRedRatio(rightBox);
+
+        const lab = {
+
+            L:
+                (left.lab.L + right.lab.L) / 2,
+
+            a:
+                (left.lab.a + right.lab.a) / 2,
+
+            b:
+                (left.lab.b + right.lab.b) / 2
+        };
+
+        const redRatio =
+            (leftRed + rightRed) / 2;
+
+        const findings = [];
+
+        /*
+         * 這些數值沿用計畫書提出的研究門檻，
+         * 目前定位為「提示條件」而不是臨床診斷。
+         */
+
+        if (lab.b > 12.0) {
+
+            findings.push(
+                "影像顯示較明顯的黃色色彩特徵"
+            );
+
+        } else {
+
+            findings.push(
+                "未發現明顯黃色色彩特徵"
+            );
+        }
+
+
+        if (lab.a > 42.0) {
+
+            findings.push(
+                "影像顯示較明顯的紅色色彩特徵"
+            );
+
+        } else {
+
+            findings.push(
+                "未發現明顯紅色色彩特徵"
+            );
+        }
+
+
+        return {
+
+            quality: {
+                faceDetected: true,
+                eyeDetected: true
+            },
+
+            color: {
+
+                rgb: {
+                    left,
+                    right
+                },
+
+                hsv: {
+                    left: left.hsv,
+                    right: right.hsv
+                },
+
+                lStar: Number(lab.L.toFixed(2)),
+                aStar: Number(lab.a.toFixed(2)),
+                bStar: Number(lab.b.toFixed(2)),
+
+                redRatio:
+                    Number(redRatio.toFixed(2))
+            },
+
+            geometry: {
+
+                leftEyeWidth:
+                    Number(
+                        leftBox.width.toFixed(4)
+                    ),
+
+                rightEyeWidth:
+                    Number(
+                        rightBox.width.toFixed(4)
+                    )
+            },
+
+            findings
+        };
+    }
+
+
+    captureImage() {
+
+        const canvas =
+            document.createElement("canvas");
+
+        canvas.width =
+            this.video.videoWidth;
+
+        canvas.height =
+            this.video.videoHeight;
+
+        const ctx =
+            canvas.getContext("2d");
+
+        ctx.drawImage(
+            this.video,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+        return canvas;
     }
 }
-
-window.FaceAnalyzer = FaceAnalyzer;
