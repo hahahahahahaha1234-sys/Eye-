@@ -16,6 +16,240 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+
+    <style>
+        /* =========================
+           作品計畫書導向首頁
+        ========================== */
+        .home-content {
+            width: min(1120px, 100%);
+            margin: 0 auto;
+        }
+
+        .home-block {
+            margin-top: 70px;
+            text-align: left;
+        }
+
+        .home-block-title {
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+
+        .home-block-description {
+            color: var(--muted);
+            line-height: 1.8;
+            max-width: 820px;
+            margin-bottom: 24px;
+        }
+
+        .problem-grid,
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+
+        .info-card {
+            padding: 22px;
+            border: 1px solid var(--line);
+            background: rgba(0, 220, 255, 0.025);
+        }
+
+        .info-card strong {
+            display: block;
+            color: var(--cyan);
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+
+        .info-card p {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .flow-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+        }
+
+        .flow-step {
+            position: relative;
+            padding: 20px 12px;
+            min-height: 125px;
+            border: 1px solid var(--line);
+            background: rgba(0, 220, 255, 0.025);
+        }
+
+        .flow-step-number {
+            color: var(--cyan);
+            font-size: 11px;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .flow-step strong {
+            display: block;
+            margin-bottom: 7px;
+        }
+
+        .flow-step span {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .sticker-section {
+            display: grid;
+            grid-template-columns: 230px 1fr;
+            gap: 35px;
+            align-items: center;
+            padding: 28px;
+            border: 1px solid var(--line);
+            background: rgba(0, 220, 255, 0.025);
+        }
+
+        .home-sticker {
+            width: 190px;
+            aspect-ratio: 1;
+            margin: auto;
+            padding: 14px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+            background: #fff;
+            transform: rotate(-2deg);
+            box-shadow: 0 15px 40px rgba(0,0,0,.3);
+        }
+
+        .home-sticker div {
+            border: 1px solid #999;
+        }
+
+        .home-sticker .r { background: rgb(220,40,40); }
+        .home-sticker .g { background: rgb(40,180,80); }
+        .home-sticker .b { background: rgb(40,100,220); }
+        .home-sticker .w { background: rgb(245,245,245); }
+
+        .sticker-steps {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .sticker-step {
+            color: var(--muted);
+            line-height: 1.7;
+            font-size: 13px;
+        }
+
+        .sticker-step b {
+            color: var(--text);
+        }
+
+        .measurement-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .measurement-card {
+            padding: 18px;
+            border: 1px solid var(--line);
+            text-align: center;
+        }
+
+        .measurement-card .symbol {
+            color: var(--cyan);
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .measurement-card strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .measurement-card span {
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .risk-guide {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .risk-guide-card {
+            padding: 20px;
+            border: 1px solid var(--line);
+        }
+
+        .risk-guide-card strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .risk-guide-card p {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .risk-green { border-color: rgba(66,224,139,.35); }
+        .risk-yellow { border-color: rgba(255,200,50,.35); }
+        .risk-red { border-color: rgba(255,80,80,.35); }
+        .risk-green strong { color: #42e08b; }
+        .risk-yellow strong { color: #ffc832; }
+        .risk-red strong { color: #ff6464; }
+
+        .home-bottom-note {
+            margin-top: 55px;
+            padding: 22px;
+            border-left: 3px solid var(--cyan);
+            background: rgba(0,220,255,.035);
+            color: var(--muted);
+            line-height: 1.8;
+            font-size: 13px;
+        }
+
+        @media (max-width: 850px) {
+            .problem-grid,
+            .tech-grid,
+            .risk-guide {
+                grid-template-columns: 1fr;
+            }
+
+            .flow-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .measurement-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .sticker-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .flow-grid,
+            .measurement-grid,
+            .sticker-steps {
+                grid-template-columns: 1fr;
+            }
+
+            .home-block {
+                margin-top: 48px;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -23,71 +257,233 @@
 <div class="app">
 
     <!-- =========================
-         首頁
+         首頁：依作品計畫書重新整理
     ========================== -->
-
     <section id="home-section" class="page-section">
 
-        <div class="hero">
+        <div class="home-content">
 
-            <div class="system-tag">
-                EYE-AI / COLORSAFE
+            <div class="hero">
+                <div class="system-tag">EYE-AI / COLORSAFE</div>
+
+                <h1>
+                    遠距眼部
+                    <span>初篩系統</span>
+                </h1>
+
+                <p class="hero-description">
+                    以「手機鏡頭＋微型色彩校正貼紙」為核心，
+                    結合 MediaPipe、OpenCV.js、色彩分析與 AI，
+                    將居家拍攝的眼部影像進行光學標準化，提供眼部外觀的初步風險提示。
+                </p>
+
+                <div class="disease-grid">
+                    <div class="disease-card">
+                        <div class="disease-number">01</div>
+                        <h3>黃疸</h3>
+                        <p>鞏膜黃色程度</p>
+                    </div>
+
+                    <div class="disease-card">
+                        <div class="disease-number">02</div>
+                        <h3>急性結膜炎</h3>
+                        <p>結膜紅色程度</p>
+                    </div>
+
+                    <div class="disease-card">
+                        <div class="disease-number">03</div>
+                        <h3>角膜老年環</h3>
+                        <p>角膜周邊灰白特徵</p>
+                    </div>
+
+                    <div class="disease-card">
+                        <div class="disease-number">04</div>
+                        <h3>白內障</h3>
+                        <p>瞳孔區亮度與混濁</p>
+                    </div>
+
+                    <div class="disease-card">
+                        <div class="disease-number">05</div>
+                        <h3>其他眼部異常</h3>
+                        <p>整體影像特徵</p>
+                    </div>
+                </div>
+
+                <button id="start-btn" class="primary-btn">
+                    開始 3 秒診前預檢 →
+                </button>
+
+                <p class="medical-note">
+                    點擊首頁病症卡可查看說明；右下角「說明」可在任何頁面重新開啟衛教中心。
+                </p>
             </div>
 
-            <h1>
-                遠距眼部
-                <span>初篩系統</span>
-            </h1>
+            <div class="home-block">
+                <div class="section-label">WHY COLORSAFE EYE-AI</div>
+                <h2 class="home-block-title">我們想解決什麼問題？</h2>
+                <p class="home-block-description">
+                    一般手機影像容易受到環境光源色溫與自動白平衡（AWB）影響，
+                    造成眼白偏黃、結膜顏色被洗淡等問題。ColorSafe EYE-AI 透過實體校色貼紙與影像校正，
+                    嘗試降低光源差異對眼部色彩分析的干擾，讓手機成為低成本、高頻率的居家初篩工具。
+                </p>
 
-            <p class="hero-description">
-                結合手機鏡頭、MediaPipe、色彩分析與 AI，
-                協助進行眼部外觀初步檢測。
-            </p>
-
-            <div class="disease-grid">
-
-                <div class="disease-card">
-                    <div class="disease-number">01</div>
-                    <h3>黃疸</h3>
-                    <p>鞏膜黃色程度</p>
+                <div class="problem-grid">
+                    <div class="info-card">
+                        <strong>01 / 環境光干擾</strong>
+                        <p>暖黃光與冷白光會改變影像中的 RGB 數值，使單純手機拍攝難以直接比較。</p>
+                    </div>
+                    <div class="info-card">
+                        <strong>02 / 傳統檢查門檻</strong>
+                        <p>慢性病與眼部問題常需要定期追蹤，但行動不便或偏鄉族群不一定能頻繁到醫療院所。</p>
+                    </div>
+                    <div class="info-card">
+                        <strong>03 / 我們的改進</strong>
+                        <p>利用低成本色彩校正貼紙搭配手機與 AI，先提供風險提醒，再引導使用者接受正式醫療評估。</p>
+                    </div>
                 </div>
-
-                <div class="disease-card">
-                    <div class="disease-number">02</div>
-                    <h3>急性結膜炎</h3>
-                    <p>結膜紅色程度</p>
-                </div>
-
-                <div class="disease-card">
-                    <div class="disease-number">03</div>
-                    <h3>角膜老年環</h3>
-                    <p>角膜周邊灰白特徵</p>
-                </div>
-
-                <div class="disease-card">
-                    <div class="disease-number">04</div>
-                    <h3>白內障</h3>
-                    <p>瞳孔區亮度與混濁</p>
-                </div>
-
-                <div class="disease-card">
-                    <div class="disease-number">05</div>
-                    <h3>眼部異常</h3>
-                    <p>整體影像特徵</p>
-                </div>
-
             </div>
 
-            <button
-                id="start-btn"
-                class="primary-btn"
-            >
-                開始 3 秒診前預檢 →
-            </button>
+            <div class="home-block">
+                <div class="section-label">SCREENING WORKFLOW</div>
+                <h2 class="home-block-title">從拍攝到報告</h2>
+                <p class="home-block-description">
+                    系統依照作品計畫書的流程，將影像處理拆成六個階段，從校色、定位到特徵分析與健康建議。
+                </p>
 
-            <p class="medical-note">
-                本系統僅供健康初篩參考，不能取代醫師診斷。
-            </p>
+                <div class="flow-grid">
+                    <div class="flow-step">
+                        <div class="flow-step-number">01</div>
+                        <strong>貼上</strong>
+                        <span>將色彩校正貼紙貼於眼睛下方顴骨處。</span>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-step-number">02</div>
+                        <strong>拍攝</strong>
+                        <span>讓眼睛與校色貼紙同時進入手機畫面。</span>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-step-number">03</div>
+                        <strong>校正</strong>
+                        <span>利用參考色降低環境光與手機色偏影響。</span>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-step-number">04</div>
+                        <strong>定位</strong>
+                        <span>MediaPipe Face Mesh 鎖定臉部與眼部 ROI。</span>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-step-number">05</div>
+                        <strong>分析</strong>
+                        <span>OpenCV.js 與 CIE L*a*b* 等特徵進行影像分析。</span>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-step-number">06</div>
+                        <strong>建議</strong>
+                        <span>輸出綠、黃、紅三色風險提示與健康建議。</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="home-block">
+                <div class="section-label">COLOR CALIBRATION STICKER</div>
+                <h2 class="home-block-title">為什麼需要校色貼紙？</h2>
+
+                <div class="sticker-section">
+                    <div class="home-sticker" aria-label="四格色彩校正示意">
+                        <div class="r"></div>
+                        <div class="g"></div>
+                        <div class="b"></div>
+                        <div class="w"></div>
+                    </div>
+
+                    <div class="sticker-steps">
+                        <div class="sticker-step"><b>① 清潔雙手</b><br>拍攝前先保持手部清潔。</div>
+                        <div class="sticker-step"><b>② 貼於顴骨</b><br>放在眼睛下方、眼眶下緣附近。</div>
+                        <div class="sticker-step"><b>③ 同時入鏡</b><br>眼睛與貼紙都要位於相機畫面內。</div>
+                        <div class="sticker-step"><b>④ 平視拍攝</b><br>避免強烈直射光與貼紙明顯反光。</div>
+                        <div class="sticker-step"><b>⑤ 保持穩定</b><br>讓系統取得較穩定的眼部 ROI。</div>
+                        <div class="sticker-step"><b>⑥ 完成後撕除</b><br>取得報告後將一次性貼紙撕下丟棄。</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="home-block">
+                <div class="section-label">IMAGE FEATURES</div>
+                <h2 class="home-block-title">系統觀察哪些影像特徵？</h2>
+                <p class="home-block-description">
+                    系統不是只看「照片像不像某種疾病」，而是先定位眼部區域，再從不同色彩與亮度特徵整理成初篩資訊。
+                </p>
+
+                <div class="measurement-grid">
+                    <div class="measurement-card">
+                        <div class="symbol">b*</div>
+                        <strong>黃色程度</strong>
+                        <span>主要用於觀察鞏膜黃色特徵。</span>
+                    </div>
+                    <div class="measurement-card">
+                        <div class="symbol">a*</div>
+                        <strong>紅色程度</strong>
+                        <span>主要用於觀察結膜紅色與充血特徵。</span>
+                    </div>
+                    <div class="measurement-card">
+                        <div class="symbol">L*</div>
+                        <strong>亮度</strong>
+                        <span>可用於觀察瞳孔或角膜區域的亮度差異。</span>
+                    </div>
+                    <div class="measurement-card">
+                        <div class="symbol">ROI</div>
+                        <strong>眼部區域</strong>
+                        <span>先鎖定眼部，再排除大部分無關背景。</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="home-block">
+                <div class="section-label">RISK LEVEL</div>
+                <h2 class="home-block-title">三色風險提示</h2>
+
+                <div class="risk-guide">
+                    <div class="risk-guide-card risk-green">
+                        <strong>綠｜低風險</strong>
+                        <p>影像中未觀察到明顯異常特徵。仍應維持正常用眼與定期眼科檢查。</p>
+                    </div>
+                    <div class="risk-guide-card risk-yellow">
+                        <strong>黃｜中風險</strong>
+                        <p>出現值得留意的影像特徵，建議持續觀察並依系統建議接受專業評估。</p>
+                    </div>
+                    <div class="risk-guide-card risk-red">
+                        <strong>紅｜高風險</strong>
+                        <p>出現較明顯的異常特徵。系統會提醒使用者儘速尋求醫療協助，而不是自行診斷。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="home-block">
+                <div class="section-label">TECHNOLOGY</div>
+                <h2 class="home-block-title">核心技術</h2>
+
+                <div class="tech-grid">
+                    <div class="info-card">
+                        <strong>MediaPipe Face Mesh</strong>
+                        <p>即時取得臉部特徵點，協助鎖定眼睛與眼周 ROI，減少不必要的影像運算。</p>
+                    </div>
+                    <div class="info-card">
+                        <strong>OpenCV.js</strong>
+                        <p>在瀏覽器端進行影像處理、區域分析與色彩特徵擷取。</p>
+                    </div>
+                    <div class="info-card">
+                        <strong>CIE L*a*b*</strong>
+                        <p>將亮度 L* 與色彩軸 a*、b* 分開描述，作為校色後的影像特徵之一。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="home-bottom-note">
+                <strong>重要提醒：</strong>
+                ColorSafe EYE-AI 的定位是「遠距眼部初篩與健康衛教」，不是醫療診斷工具。
+                黃疸、結膜炎、角膜老年環、白內障等外觀特徵都可能有多種原因，
+                單張照片與單一色彩數值不能直接等同疾病確診。若出現持續疼痛、明顯視力下降、嚴重畏光、外傷或其他急性症狀，請直接尋求專業醫療評估。
+            </div>
 
         </div>
 
@@ -97,455 +493,189 @@
     <!-- =========================
          檢測前預檢
     ========================== -->
-
-    <section
-        id="check-section"
-        class="page-section hidden"
-    >
-
+    <section id="check-section" class="page-section hidden">
         <div class="panel">
-
-            <div class="section-label">
-                PRE-SCREENING TRIAGE
-            </div>
-
+            <div class="section-label">PRE-SCREENING TRIAGE</div>
             <h2>檢測前確認</h2>
-
             <p class="section-description">
-                為降低眼部狀態對影像分析的影響，
-                請先確認以下情況。
+                為降低眼部狀態對影像分析的影響，請先確認以下情況。
             </p>
 
             <div class="check-list">
-
                 <label class="check-item">
-                    <input
-                        type="checkbox"
-                        id="check-injury"
-                    >
-                    <span>
-                        近 3 個月內沒有眼部受傷或手術
-                    </span>
+                    <input type="checkbox" id="check-injury">
+                    <span>近 3 個月內沒有眼部受傷或手術</span>
                 </label>
-
                 <label class="check-item">
-                    <input
-                        type="checkbox"
-                        id="check-contact"
-                    >
-                    <span>
-                        目前沒有配戴隱形眼鏡
-                    </span>
+                    <input type="checkbox" id="check-contact">
+                    <span>目前沒有配戴隱形眼鏡</span>
                 </label>
-
                 <label class="check-item">
-                    <input
-                        type="checkbox"
-                        id="check-drops"
-                    >
-                    <span>
-                        30 分鐘內沒有使用眼藥水
-                    </span>
+                    <input type="checkbox" id="check-drops">
+                    <span>30 分鐘內沒有使用眼藥水</span>
                 </label>
-
             </div>
 
-            <div
-                id="check-warning"
-                class="warning-box hidden"
-            >
+            <div id="check-warning" class="warning-box hidden">
                 <strong>目前不建議進行拍攝</strong>
                 <p id="check-warning-text"></p>
             </div>
 
-            <button
-                id="continue-check-btn"
-                class="primary-btn"
-            >
-                確認並繼續 →
-            </button>
-
+            <button id="continue-check-btn" class="primary-btn">確認並繼續 →</button>
         </div>
-
     </section>
 
 
     <!-- =========================
          校色貼紙
     ========================== -->
-
-    <section
-        id="calibration-section"
-        class="page-section hidden"
-    >
-
+    <section id="calibration-section" class="page-section hidden">
         <div class="panel">
-
-            <div class="section-label">
-                COLOR CALIBRATION
-            </div>
-
+            <div class="section-label">COLOR CALIBRATION</div>
             <h2>準備校色貼紙</h2>
-
             <p class="section-description">
-                請將校色貼紙放在眼睛下方顴骨附近，
-                並讓眼睛與貼紙同時進入手機畫面。
+                請將校色貼紙放在眼睛下方顴骨附近，並讓眼睛與貼紙同時進入手機畫面。
             </p>
 
             <div class="calibration-guide">
-
                 <div class="sticker-demo">
-
                     <div class="color-square red"></div>
                     <div class="color-square green"></div>
                     <div class="color-square blue"></div>
                     <div class="color-square white"></div>
-
                 </div>
-
                 <div class="guide-text">
                     <p>✓ 眼睛與貼紙需同時入鏡</p>
                     <p>✓ 避免強烈直射光</p>
                     <p>✓ 不要讓貼紙產生明顯反光</p>
                     <p>✓ 保持臉部穩定</p>
                 </div>
-
             </div>
 
-            <button
-                id="start-camera-btn"
-                class="primary-btn"
-            >
-                開啟相機 →
-            </button>
-
+            <button id="start-camera-btn" class="primary-btn">開啟相機 →</button>
         </div>
-
     </section>
 
 
     <!-- =========================
          掃描頁面
     ========================== -->
-
-    <section
-        id="scan-section"
-        class="page-section hidden"
-    >
-
+    <section id="scan-section" class="page-section hidden">
         <div class="scan-header">
-
             <div>
-                <div class="section-label">
-                    REAL-TIME SCAN
-                </div>
-
+                <div class="section-label">REAL-TIME SCAN</div>
                 <h2>眼部影像分析</h2>
             </div>
-
-            <div
-                id="camera-status"
-                class="status-badge"
-            >
-                初始化中
-            </div>
-
+            <div id="camera-status" class="status-badge">初始化中</div>
         </div>
 
-
         <div class="camera-wrapper">
-
-            <video
-                id="camera-video"
-                autoplay
-                playsinline
-                muted
-            ></video>
-
-            <canvas
-                id="overlay-canvas"
-            ></canvas>
-
+            <video id="camera-video" autoplay playsinline muted></video>
+            <canvas id="overlay-canvas"></canvas>
             <div class="hud-corner top-left"></div>
             <div class="hud-corner top-right"></div>
             <div class="hud-corner bottom-left"></div>
             <div class="hud-corner bottom-right"></div>
-
-            <div
-                id="face-guide"
-                class="face-guide"
-            >
-                <span>FACE</span>
-            </div>
-
-            <div
-                id="scan-message"
-                class="scan-message"
-            >
-                請將眼睛與校色貼紙放入畫面
-            </div>
-
+            <div id="face-guide" class="face-guide"><span>FACE</span></div>
+            <div id="scan-message" class="scan-message">請將眼睛與校色貼紙放入畫面</div>
         </div>
-
 
         <div class="scan-info">
-
-            <div class="info-item">
-                <span>FACE</span>
-                <strong id="face-state">等待</strong>
-            </div>
-
-            <div class="info-item">
-                <span>EYE</span>
-                <strong id="eye-state">等待</strong>
-            </div>
-
-            <div class="info-item">
-                <span>LIGHT</span>
-                <strong id="light-state">等待</strong>
-            </div>
-
+            <div class="info-item"><span>FACE</span><strong id="face-state">等待</strong></div>
+            <div class="info-item"><span>EYE</span><strong id="eye-state">等待</strong></div>
+            <div class="info-item"><span>LIGHT</span><strong id="light-state">等待</strong></div>
         </div>
 
-
-        <button
-            id="capture-btn"
-            class="primary-btn"
-            disabled
-        >
-            擷取特徵並分析
-        </button>
-
-        <p class="medical-note">
-            請保持頭部穩定，避免瞇眼與劇烈晃動。
-        </p>
-
+        <button id="capture-btn" class="primary-btn" disabled>擷取特徵並分析</button>
+        <p class="medical-note">請保持頭部穩定，避免瞇眼與劇烈晃動。</p>
     </section>
 
 
     <!-- =========================
          分析中
     ========================== -->
-
-    <section
-        id="loading-section"
-        class="page-section hidden"
-    >
-
+    <section id="loading-section" class="page-section hidden">
         <div class="loading-panel">
-
             <div class="scanner-animation"></div>
-
-            <div class="section-label">
-                EYE-AI PROCESSING
-            </div>
-
-            <h2 id="loading-title">
-                正在分析影像
-            </h2>
-
-            <p id="loading-text">
-                正在進行眼部定位……
-            </p>
-
-            <div class="progress-bar">
-                <div id="progress-fill"></div>
-            </div>
-
+            <div class="section-label">EYE-AI PROCESSING</div>
+            <h2 id="loading-title">正在分析影像</h2>
+            <p id="loading-text">正在進行眼部定位……</p>
+            <div class="progress-bar"><div id="progress-fill"></div></div>
         </div>
-
     </section>
 
 
     <!-- =========================
          結果頁
     ========================== -->
-
-    <section
-        id="result-section"
-        class="page-section hidden"
-    >
-
+    <section id="result-section" class="page-section hidden">
         <div class="result-panel">
-
-            <div class="section-label">
-                SCREENING REPORT
-            </div>
-
+            <div class="section-label">SCREENING REPORT</div>
             <h2>AI 初篩報告</h2>
 
-            <div
-                id="risk-indicator"
-                class="risk-indicator low"
-            >
-
+            <div id="risk-indicator" class="risk-indicator low">
                 <div class="risk-light"></div>
-
                 <div>
                     <span>SCREENING LEVEL</span>
-                    <strong id="risk-level">
-                        低風險
-                    </strong>
+                    <strong id="risk-level">低風險</strong>
                 </div>
-
             </div>
-
 
             <div class="result-grid">
-
                 <div class="result-image-box">
-
-                    <canvas
-                        id="result-canvas"
-                    ></canvas>
-
+                    <canvas id="result-canvas"></canvas>
                 </div>
-
-
                 <div class="result-content">
-
                     <div class="result-block">
-
                         <h3>主要觀察</h3>
-
-                        <p id="result-finding">
-                            尚無資料
-                        </p>
-
+                        <p id="result-finding">尚無資料</p>
                     </div>
-
-
                     <div class="result-block">
-
                         <h3>系統說明</h3>
-
-                        <p id="result-description">
-                            尚無資料
-                        </p>
-
+                        <p id="result-description">尚無資料</p>
                     </div>
-
-
                     <div class="result-block">
-
                         <h3>建議</h3>
-
-                        <p id="result-advice">
-                            尚無資料
-                        </p>
-
+                        <p id="result-advice">尚無資料</p>
                     </div>
-
                 </div>
-
             </div>
-
-
-            <!-- 數值特徵 -->
 
             <div class="feature-section">
-
                 <h3>影像特徵</h3>
-
                 <div class="feature-grid">
-
-                    <div class="feature-card">
-                        <span>a*</span>
-                        <strong id="feature-a">
-                            --
-                        </strong>
-                        <small>紅綠軸</small>
-                    </div>
-
-                    <div class="feature-card">
-                        <span>b*</span>
-                        <strong id="feature-b">
-                            --
-                        </strong>
-                        <small>黃藍軸</small>
-                    </div>
-
-                    <div class="feature-card">
-                        <span>L*</span>
-                        <strong id="feature-l">
-                            --
-                        </strong>
-                        <small>亮度</small>
-                    </div>
-
-                    <div class="feature-card">
-                        <span>RED</span>
-                        <strong id="feature-red">
-                            --
-                        </strong>
-                        <small>紅色比例</small>
-                    </div>
-
+                    <div class="feature-card"><span>a*</span><strong id="feature-a">--</strong><small>紅綠軸</small></div>
+                    <div class="feature-card"><span>b*</span><strong id="feature-b">--</strong><small>黃藍軸</small></div>
+                    <div class="feature-card"><span>L*</span><strong id="feature-l">--</strong><small>亮度</small></div>
+                    <div class="feature-card"><span>RED</span><strong id="feature-red">--</strong><small>紅色比例</small></div>
                 </div>
-
             </div>
 
-
             <div class="result-actions">
-
-                <button
-                    id="history-btn"
-                    class="secondary-btn"
-                >
-                    查看歷史紀錄
-                </button>
-
-                <button
-                    id="restart-btn"
-                    class="primary-btn"
-                >
-                    重新檢測
-                </button>
-
+                <button id="history-btn" class="secondary-btn">查看歷史紀錄</button>
+                <button id="restart-btn" class="primary-btn">重新檢測</button>
             </div>
 
             <p class="medical-note">
-                本結果屬於影像初篩，不代表疾病確診。
-                若有持續或明顯不適，請尋求專業醫療評估。
+                本結果屬於影像初篩，不代表疾病確診。若有持續或明顯不適，請尋求專業醫療評估。
             </p>
-
         </div>
-
     </section>
 
 
     <!-- =========================
          歷史紀錄
     ========================== -->
-
-    <section
-        id="history-section"
-        class="page-section hidden"
-    >
-
+    <section id="history-section" class="page-section hidden">
         <div class="panel">
-
-            <div class="section-label">
-                HISTORY
-            </div>
-
+            <div class="section-label">HISTORY</div>
             <h2>檢測紀錄</h2>
-
             <div id="history-list"></div>
-
-            <button
-                id="back-result-btn"
-                class="secondary-btn"
-            >
-                返回報告
-            </button>
-
+            <button id="back-result-btn" class="secondary-btn">返回報告</button>
         </div>
-
     </section>
 
 </div>
-
 
 <script src="analyzer.js"></script>
 <script src="app.js"></script>
