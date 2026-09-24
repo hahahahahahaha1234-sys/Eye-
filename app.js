@@ -53,8 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 3. API 設定與模型選擇
         const API_KEY = "AQ.Ab8RN6L1Y40nR2-hYbqDMKsJ8fzQ-lyi_Bjwenh74dUcjv0ylg"; 
-        const primaryModel = "gemini-1.5-flash"; // 速度最快、穩定度高的主力模型
-        const fallbackModel = "gemini-1.5-pro";  // 備用模型
+        const primaryModel = "gemini-3.8-flash"; // 速度最快、穩定度高的主力模型
+        const fallbackModel = "gemini-3.5-flash";  // 備用模型
 
         // 設計給 Gemini 的嚴謹醫療診斷 Prompt
         const promptText = `
