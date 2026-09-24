@@ -52,8 +52,8 @@ class FaceAnalyzer {
     }
 
     // 當 MediaPipe 傳回一幀結果時觸發
+    // 當 MediaPipe 傳回一幀結果時觸發
     onResults(results) {
-        // 設定 Canvas 大小與 Video 匹配
         this.overlayCanvas.width = this.videoElement.videoWidth;
         this.overlayCanvas.height = this.videoElement.videoHeight;
         this.overlayCtx.save();
@@ -62,24 +62,12 @@ class FaceAnalyzer {
         if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
             this.lastLandmarks = results.multiFaceLandmarks[0];
 
-            // 繪製眼睛與虹膜的科技網格
+            // 僅繪製眼睛與虹膜的科技網格 (移除了黃色貼紙框)
             drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_RIGHT_EYE, {color: '#00ffcc', lineWidth: 2});
             drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_LEFT_EYE, {color: '#00ffcc', lineWidth: 2});
             drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_RIGHT_IRIS, {color: '#0088ff', lineWidth: 2});
             drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_LEFT_IRIS, {color: '#0088ff', lineWidth: 2});
-
-            // 繪製黃色 ROI 色彩校正貼紙提示框 (特徵點 111 與 340 位於眼下)
-            const leftEyeBottom = this.lastLandmarks[111]; 
-            const rightEyeBottom = this.lastLandmarks[340];
             
-            if(leftEyeBottom && rightEyeBottom) {
-                this.overlayCtx.fillStyle = 'rgba(255, 255, 0, 0.4)';
-                this.overlayCtx.strokeStyle = '#ffff00';
-                this.overlayCtx.lineWidth = 1.5;
-                const w = 30, h = 30;
-                this.overlayCtx.strokeRect(leftEyeBottom.x * this.overlayCanvas.width - w/2, leftEyeBottom.y * this.overlayCanvas.height + 10, w, h);
-                this.overlayCtx.strokeRect(rightEyeBottom.x * this.overlayCanvas.width - w/2, rightEyeBottom.y * this.overlayCanvas.height + 10, w, h);
-            }
         } else {
             this.lastLandmarks = null;
         }
