@@ -44,6 +44,435 @@ function showSection(id) {
 
 
 /* =========================
+   常駐說明中心
+========================= */
+
+const diseaseInfo = {
+    jaundice: {
+        title: "黃疸",
+        subtitle: "鞏膜可能呈現黃色",
+        description:
+            "黃疸是膽紅素累積造成的表現，可能與肝臟、膽道、血液疾病、感染或藥物等因素有關。眼白變黃本身不能用來判斷是哪一種原因。",
+        solution:
+            "沒有單一的「退黃」方法，處理方式取決於造成黃疸的原因。如果眼白或皮膚出現明顯黃色，應由醫療人員評估，必要時檢查膽紅素與肝功能等。"
+    },
+    conjunctivitis: {
+        title: "急性結膜炎",
+        subtitle: "結膜紅、癢、流淚等",
+        description:
+            "結膜炎可能由病毒、細菌、過敏或刺激造成，因此單靠眼睛紅不能判斷病因。",
+        solution:
+            "輕症可先避免揉眼、保持手部清潔，冷敷可減輕不適；人工淚液也可能幫助舒緩乾澀。若是感染性結膜炎，避免共用毛巾、枕套或眼妝。細菌性等特定情況可能需要醫師評估後使用藥物。"
+    },
+    arcus: {
+        title: "角膜老年環",
+        subtitle: "角膜周邊灰白色環狀特徵",
+        description:
+            "角膜老年環是角膜周邊脂質沉積形成的灰白、藍白色環，常見於年齡增加者，通常不會影響視力。",
+        solution:
+            "與老化相關的角膜老年環通常不需要直接治療，也不需要為了消除環狀外觀而手術。如果較年輕時出現、只有單眼出現或伴隨其他異常，可請醫師評估是否需要檢查血脂或其他原因。"
+    },
+    cataract: {
+        title: "白內障",
+        subtitle: "水晶體混濁造成視覺品質下降",
+        description:
+            "白內障是眼睛內的水晶體變得混濁，可能造成視力模糊、眩光、夜間視力下降或顏色看起來變淡。影像初篩不能確診白內障。",
+        solution:
+            "早期可依醫師建議調整眼鏡度數、增加照明或減少眩光。當白內障已明顯影響日常生活時，眼科醫師可能評估白內障手術；手術是目前移除白內障的有效治療方式。"
+    },
+    abnormal: {
+        title: "其他眼部異常",
+        subtitle: "影像出現無法歸類的特徵",
+        description:
+            "眼睛外觀改變可能有很多原因，包含乾眼、刺激、感染、角膜或其他眼部問題。單張照片無法完整判斷。",
+        solution:
+            "先避免揉眼及可能造成刺激的因素；如果有疼痛、視力明顯下降、畏光、持續紅腫或其他新出現的症狀，建議接受眼科檢查，而不是只依賴本系統結果。"
+    }
+};
+
+
+function initHelpCenter() {
+
+    if (document.getElementById("help-center-btn")) {
+        return;
+    }
+
+
+    const style =
+        document.createElement("style");
+
+    style.id = "help-center-style";
+
+    style.textContent = `
+        #help-center-btn {
+            position: fixed;
+            right: 22px;
+            bottom: 22px;
+            z-index: 9998;
+            min-width: 72px;
+            height: 46px;
+            padding: 0 18px;
+            border: 1px solid rgba(0, 234, 255, 0.7);
+            border-radius: 24px;
+            color: #001015;
+            background: #00eaff;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 0 25px rgba(0, 234, 255, 0.22);
+        }
+
+        #help-center-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 35px rgba(0, 234, 255, 0.35);
+        }
+
+        #help-center-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(0, 5, 10, 0.78);
+            backdrop-filter: blur(8px);
+        }
+
+        #help-center-modal.open {
+            display: flex;
+        }
+
+        .help-modal-panel {
+            width: min(900px, 100%);
+            max-height: min(820px, 90vh);
+            overflow-y: auto;
+            padding: 30px;
+            background: rgba(7, 18, 28, 0.98);
+            border: 1px solid rgba(0, 220, 255, 0.35);
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6);
+        }
+
+        .help-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 22px;
+        }
+
+        .help-modal-header h2 {
+            font-size: 30px;
+            margin: 0 0 8px;
+        }
+
+        .help-modal-header p {
+            color: #7f9aaa;
+            line-height: 1.7;
+        }
+
+        #help-close-btn {
+            width: 38px;
+            height: 38px;
+            border: 1px solid rgba(0, 220, 255, 0.25);
+            background: transparent;
+            color: #00eaff;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        .help-disease-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .help-disease-card {
+            padding: 18px;
+            border: 1px solid rgba(0, 220, 255, 0.22);
+            background: rgba(0, 220, 255, 0.025);
+            color: #eafaff;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .help-disease-card:hover,
+        .help-disease-card.active {
+            border-color: rgba(0, 234, 255, 0.7);
+            background: rgba(0, 220, 255, 0.07);
+        }
+
+        .help-disease-card strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 16px;
+        }
+
+        .help-disease-card span {
+            color: #7f9aaa;
+            font-size: 12px;
+        }
+
+        .help-detail {
+            display: none;
+            margin-top: 18px;
+            padding: 22px;
+            border-left: 3px solid #00eaff;
+            background: rgba(0, 220, 255, 0.04);
+        }
+
+        .help-detail.open {
+            display: block;
+        }
+
+        .help-detail h3 {
+            margin-bottom: 8px;
+            font-size: 22px;
+        }
+
+        .help-detail .help-subtitle {
+            color: #00eaff;
+            font-size: 12px;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        .help-detail h4 {
+            margin: 16px 0 7px;
+            color: #eafaff;
+        }
+
+        .help-detail p {
+            color: #b2c5cf;
+            line-height: 1.8;
+            font-size: 14px;
+        }
+
+        .help-disclaimer {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(0, 220, 255, 0.12);
+            color: #637a88;
+            font-size: 11px;
+            line-height: 1.7;
+        }
+
+        @media (max-width: 650px) {
+            #help-center-btn {
+                right: 14px;
+                bottom: 14px;
+            }
+
+            .help-modal-panel {
+                padding: 22px;
+            }
+
+            .help-disease-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    `;
+
+    document.head.appendChild(style);
+
+
+    const button =
+        document.createElement("button");
+
+    button.id = "help-center-btn";
+    button.type = "button";
+    button.textContent = "說明";
+    button.title = "開啟系統說明";
+
+
+    const modal =
+        document.createElement("div");
+
+    modal.id = "help-center-modal";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-label", "系統說明");
+
+    modal.innerHTML = `
+        <div class="help-modal-panel">
+            <div class="help-modal-header">
+                <div>
+                    <div class="section-label">EYE-AI / HELP CENTER</div>
+                    <h2>系統說明</h2>
+                    <p>
+                        任何頁面都可以點右下角「說明」重新查看。
+                        點選下面的項目，可以了解可能的影像特徵與一般處理方向。
+                    </p>
+                </div>
+                <button id="help-close-btn" type="button" aria-label="關閉說明">×</button>
+            </div>
+
+            <div class="help-disease-grid">
+                <button class="help-disease-card" data-disease="jaundice" type="button">
+                    <strong>01　黃疸</strong>
+                    <span>鞏膜黃色程度</span>
+                </button>
+                <button class="help-disease-card" data-disease="conjunctivitis" type="button">
+                    <strong>02　急性結膜炎</strong>
+                    <span>結膜紅色程度</span>
+                </button>
+                <button class="help-disease-card" data-disease="arcus" type="button">
+                    <strong>03　角膜老年環</strong>
+                    <span>角膜周邊灰白特徵</span>
+                </button>
+                <button class="help-disease-card" data-disease="cataract" type="button">
+                    <strong>04　白內障</strong>
+                    <span>瞳孔區亮度與混濁</span>
+                </button>
+                <button class="help-disease-card" data-disease="abnormal" type="button">
+                    <strong>05　其他眼部異常</strong>
+                    <span>整體影像特徵</span>
+                </button>
+            </div>
+
+            <div id="help-detail" class="help-detail">
+                <h3 id="help-detail-title"></h3>
+                <div id="help-detail-subtitle" class="help-subtitle"></div>
+                <h4>這是什麼？</h4>
+                <p id="help-detail-description"></p>
+                <h4>可以怎麼處理？</h4>
+                <p id="help-detail-solution"></p>
+            </div>
+
+            <div class="help-disclaimer">
+                本系統只能提供影像初篩與衛教資訊，不能依照片確診或取代眼科檢查。
+                若有明顯疼痛、視力下降或持續異常，請接受專業醫療評估。
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(button);
+    document.body.appendChild(modal);
+
+
+    const closeModal = () => {
+        modal.classList.remove("open");
+    };
+
+
+    const openDisease = key => {
+
+        const info = diseaseInfo[key];
+
+        if (!info) return;
+
+        document
+            .querySelectorAll(".help-disease-card")
+            .forEach(card => {
+                card.classList.toggle(
+                    "active",
+                    card.dataset.disease === key
+                );
+            });
+
+        document.getElementById("help-detail-title")
+            .textContent = info.title;
+
+        document.getElementById("help-detail-subtitle")
+            .textContent = info.subtitle;
+
+        document.getElementById("help-detail-description")
+            .textContent = info.description;
+
+        document.getElementById("help-detail-solution")
+            .textContent = info.solution;
+
+        document.getElementById("help-detail")
+            .classList.add("open");
+    };
+
+
+    button.addEventListener(
+        "click",
+        () => modal.classList.add("open")
+    );
+
+    document
+        .getElementById("help-close-btn")
+        .addEventListener("click", closeModal);
+
+    modal.addEventListener(
+        "click",
+        event => {
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    );
+
+    document.addEventListener(
+        "keydown",
+        event => {
+            if (event.key === "Escape") {
+                closeModal();
+            }
+        }
+    );
+
+    modal
+        .querySelectorAll(".help-disease-card")
+        .forEach(card => {
+            card.addEventListener(
+                "click",
+                () => openDisease(card.dataset.disease)
+            );
+        });
+
+
+    /*
+     * 首頁原本的五張病症卡也直接變成可點擊說明。
+     */
+    const homeDiseaseKeys = [
+        "jaundice",
+        "conjunctivitis",
+        "arcus",
+        "cataract",
+        "abnormal"
+    ];
+
+    document
+        .querySelectorAll("#home-section .disease-card")
+        .forEach((card, index) => {
+
+            card.setAttribute("role", "button");
+            card.setAttribute("tabindex", "0");
+            card.title = "點擊查看處理說明";
+
+            const open = () => {
+                modal.classList.add("open");
+                openDisease(homeDiseaseKeys[index]);
+            };
+
+            card.addEventListener("click", open);
+
+            card.addEventListener(
+                "keydown",
+                event => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        open();
+                    }
+                }
+            );
+        });
+}
+
+
+if (document.readyState === "loading") {
+    document.addEventListener(
+        "DOMContentLoaded",
+        initHelpCenter
+    );
+} else {
+    initHelpCenter();
+}
+
+
+/* =========================
    首頁
 ========================= */
 
