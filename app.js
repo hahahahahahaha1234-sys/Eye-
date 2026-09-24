@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 3. 填入您的 Gemini API Key 與模型端點
         const API_KEY = "AQ.Ab8RN6L1Y40nR2-hYbqDMKsJ8fzQ-lyi_Bjwenh74dUcjv0ylg"; 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${API_KEY}`;
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${API_KEY}`;
 
         // 4. 設定給 Gemini 的精準診斷 Prompt (明確要求判斷細節與特徵點)
         const promptText = `
