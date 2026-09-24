@@ -1,58 +1,66 @@
+// RGB 轉 HSV 工具函式
+function rgbToHsv(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    let max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, v = max;
+    let d = max - min;
+    s = max === 0 ? 0 : d / max;
+    
+    if (max === min) {
+        h = 0; 
+    } else {
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+    return [h * 360, s * 100, v * 100];
+}
+
 class FaceAnalyzer {
     constructor(videoElement, overlayCanvas) {
         this.videoElement = videoElement;
         this.overlayCanvas = overlayCanvas;
         this.overlayCtx = overlayCanvas.getContext('2d');
-        this.camera = null;
-        this.faceMesh = null;
         this.lastLandmarks = null;
-    }
+        
+        // 建立背景分析用的隱藏畫布
+        this.analysisCanvas = document.createElement('canvas');
+        this.analysisCtx = this.analysisCanvas.getContext('2d', { willReadFrequently: true });
 
-    // 計算兩點之間的幾何距離
-    getDistance(p1, p2) {
-        return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
-    }
-
-    // 初始化 MediaPipe
-    init() {
-        if (this.faceMesh) return;
-
-        // 載入 MediaPipe 模組
-        this.faceMesh = new FaceMesh({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
-        });
-
+        this.faceMesh = new FaceMesh({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+        }});
+        
         this.faceMesh.setOptions({
             maxNumFaces: 1,
-            refineLandmarks: true, // 啟動虹膜追蹤
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5
+            refineLandmarks: true, // 開啟以取得精準的眼睛與虹膜網格
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7
         });
-
+        
         this.faceMesh.onResults(this.onResults.bind(this));
-
-        // 設定相機
+        
         this.camera = new Camera(this.videoElement, {
             onFrame: async () => {
                 await this.faceMesh.send({image: this.videoElement});
             },
             width: 640,
-            height: 480,
-            facingMode: 'user' // 使用前置鏡頭測試較方便
+            height: 480
         });
     }
 
     start() {
-        this.init();
-        if (this.camera) this.camera.start();
+        this.camera.start();
     }
 
     stop() {
-        if (this.camera) this.camera.stop();
+        this.camera.stop();
+        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
     }
 
-    // 當 MediaPipe 傳回一幀結果時觸發
-    // 當 MediaPipe 傳回一幀結果時觸發
     onResults(results) {
         this.overlayCanvas.width = this.videoElement.videoWidth;
         this.overlayCanvas.height = this.videoElement.videoHeight;
@@ -61,56 +69,98 @@ class FaceAnalyzer {
 
         if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
             this.lastLandmarks = results.multiFaceLandmarks[0];
-
-            // 僅繪製眼睛與虹膜的科技網格 (移除了黃色貼紙框)
-            drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_RIGHT_EYE, {color: '#00ffcc', lineWidth: 2});
-            drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_LEFT_EYE, {color: '#00ffcc', lineWidth: 2});
-            drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_RIGHT_IRIS, {color: '#0088ff', lineWidth: 2});
-            drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_LEFT_IRIS, {color: '#0088ff', lineWidth: 2});
             
+            // 繪製乾淨的高科技眼部網格
+            drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_RIGHT_EYE, {color: '#00ffcc', lineWidth: 1.5});
+            drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_LEFT_EYE, {color: '#00ffcc', lineWidth: 1.5});
+            drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_RIGHT_IRIS, {color: '#0088ff', lineWidth: 1.5});
+            drawConnectors(this.overlayCtx, this.lastLandmarks, FACEMESH_LEFT_IRIS, {color: '#0088ff', lineWidth: 1.5});
         } else {
             this.lastLandmarks = null;
         }
         this.overlayCtx.restore();
     }
 
-    // 計算 EAR 並回傳分析報告
+    // 分析眼部色彩並產生報告
     getAnalysisReport() {
         if (!this.lastLandmarks) {
-            return { error: true, message: "未偵測到臉部特徵，請確認您的臉部位於畫面中且光源充足。" };
+            return { error: true, message: "未偵測到清晰的臉部特徵，請確保光線充足並平視鏡頭。" };
         }
 
-        // 左眼特徵點：上(159), 下(145), 內(133), 外(33)
-        const leftTop = this.lastLandmarks[159], leftBottom = this.lastLandmarks[145];
-        const leftInner = this.lastLandmarks[133], leftOuter = this.lastLandmarks[33];
-        const leftEAR = this.getDistance(leftTop, leftBottom) / this.getDistance(leftInner, leftOuter);
+        const width = this.videoElement.videoWidth;
+        const height = this.videoElement.videoHeight;
+        this.analysisCanvas.width = width;
+        this.analysisCanvas.height = height;
+        
+        // 將當前影像畫上隱藏畫布
+        this.analysisCtx.drawImage(this.videoElement, 0, 0, width, height);
 
-        // 右眼特徵點：上(386), 下(374), 內(362), 外(263)
-        const rightTop = this.lastLandmarks[386], rightBottom = this.lastLandmarks[374];
-        const rightInner = this.lastLandmarks[362], rightOuter = this.lastLandmarks[263];
-        const rightEAR = this.getDistance(rightTop, rightBottom) / this.getDistance(rightInner, rightOuter);
+        // 取左眼與右眼的邊界框 (簡化版：取右眼點位 33 到 133 之間的區域)
+        const rightEyeLeft = this.lastLandmarks[133].x * width;
+        const rightEyeRight = this.lastLandmarks[33].x * width;
+        const rightEyeTop = this.lastLandmarks[159].y * height;
+        const rightEyeBottom = this.lastLandmarks[145].y * height;
 
-        const earDiff = Math.abs(leftEAR - rightEAR);
-        const avgEAR = (leftEAR + rightEAR) / 2;
+        const eyeWidth = Math.abs(rightEyeRight - rightEyeLeft);
+        const eyeHeight = Math.abs(rightEyeBottom - rightEyeTop);
+        const startX = Math.min(rightEyeLeft, rightEyeRight);
+        
+        // 擷取右眼的像素數據
+        const eyeImageData = this.analysisCtx.getImageData(startX, rightEyeTop, eyeWidth, eyeHeight);
+        const pixels = eyeImageData.data;
+        
+        let redPixelCount = 0;
+        let yellowPixelCount = 0;
+        let validScleraCount = 0;
 
-        if (earDiff > 0.06) {
+        for (let i = 0; i < pixels.length; i += 4) {
+            const r = pixels[i];
+            const g = pixels[i+1];
+            const b = pixels[i+2];
+
+            const [h, s, v] = rgbToHsv(r, g, b);
+
+            // 過濾掉黑色瞳孔、虹膜與反光點 (僅保留明度適中、飽和度不過低的眼白區域)
+            if (v > 30 && v < 95 && s > 5) {
+                validScleraCount++;
+                
+                // 偵測血絲 (紅色區間：色相接近 0 或 360，具備一定飽和度)
+                if ((h < 15 || h > 345) && s > 35) {
+                    redPixelCount++;
+                }
+                
+                // 偵測黃疸 (黃色區間：色相介於 30 到 60 之間)
+                if (h > 35 && h < 55 && s > 25) {
+                    yellowPixelCount++;
+                }
+            }
+        }
+
+        // 計算異常像素比例
+        const redRatio = validScleraCount > 0 ? (redPixelCount / validScleraCount) * 100 : 0;
+        const yellowRatio = validScleraCount > 0 ? (yellowPixelCount / validScleraCount) * 100 : 0;
+
+        // 根據比例輸出臨床初篩結果
+        if (yellowRatio > 15) {
             return {
-                level: "高風險 (HIGH RISK)",
-                desc: `【單側異常警告】偵測到左右眼輪廓高度極度不對稱 (落差達 ${(earDiff*100).toFixed(1)}%)。疑似單側眼瞼急性發炎、麥粒腫(針眼)或神經壓迫下垂，請盡速尋求醫療協助。`
+                error: false,
+                level: "中高風險：鞏膜泛黃",
+                desc: `系統偵測到眼白區塊黃色像素達 ${yellowRatio.toFixed(1)}%。這可能是肝膽系統過勞、黃疸或膽紅素偏高的初期徵兆。建議確保充足睡眠並減少飲酒，若持續未改善請預約消化內科抽血檢查。`
             };
-        } else if (avgEAR < 0.20) {
+        } else if (redRatio > 20) {
             return {
-                level: "中風險 (MEDIUM RISK)",
-                desc: `【浮腫疲勞警告】眼裂開合度低於正常值 (目前 EAR: ${avgEAR.toFixed(2)})。呈現瞇眼或眼瞼明顯浮腫狀態，建議適度休息、熱敷，或預約診所檢查。`
+                error: false,
+                level: "中風險：結膜充血",
+                desc: `系統偵測到眼白微血管紅色擴張比例達 ${redRatio.toFixed(1)}%。可能為急性結膜炎、過敏或眼部極度疲勞。請暫時停戴隱形眼鏡，若伴隨刺痛感請盡速就醫。`
             };
         } else {
             return {
-                level: "低風險 (LOW RISK)",
-                desc: `【特徵點正常】雙眼輪廓對稱且開合度健康 (目前 EAR: ${avgEAR.toFixed(2)})。無偵測到明顯結構異常，請維持良好用眼習慣。`
+                error: false,
+                level: "低風險：狀態良好",
+                desc: `目前未偵測到明顯的色彩異常 (紅/黃像素比例皆在安全範圍內)。特徵點追蹤顯示您的眼部外觀健康，請繼續保持良好的用眼習慣。`
             };
         }
     }
 }
 
-// 註冊為全域物件供 app.js 使用
 window.FaceAnalyzer = FaceAnalyzer;
