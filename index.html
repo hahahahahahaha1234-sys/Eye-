@@ -1,93 +1,554 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EYE-AI 遠距眼部預檢系統</title>
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>ColorSafe EYE-AI</title>
+
     <link rel="stylesheet" href="style.css">
-    
-    <!-- 引入 MediaPipe Face Mesh CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+
+    <!-- MediaPipe -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
 </head>
+
 <body>
-    <div class="bg-grid"></div>
-    <div class="bg-glow"></div>
 
-    <header>
-        <div class="header-left">
-            <button id="back-home-btn" class="icon-btn hidden"><span class="geo-icon">◇</span> 首頁說明</button>
+<div class="app">
+
+    <!-- =========================
+         首頁
+    ========================== -->
+
+    <section id="home-section" class="page-section">
+
+        <div class="hero">
+
+            <div class="system-tag">
+                EYE-AI / COLORSAFE
+            </div>
+
+            <h1>
+                遠距眼部
+                <span>初篩系統</span>
+            </h1>
+
+            <p class="hero-description">
+                結合手機鏡頭、MediaPipe、色彩分析與 AI，
+                協助進行眼部外觀初步檢測。
+            </p>
+
+            <div class="disease-grid">
+
+                <div class="disease-card">
+                    <div class="disease-number">01</div>
+                    <h3>黃疸</h3>
+                    <p>鞏膜黃色程度</p>
+                </div>
+
+                <div class="disease-card">
+                    <div class="disease-number">02</div>
+                    <h3>急性結膜炎</h3>
+                    <p>結膜紅色程度</p>
+                </div>
+
+                <div class="disease-card">
+                    <div class="disease-number">03</div>
+                    <h3>角膜老年環</h3>
+                    <p>角膜周邊灰白特徵</p>
+                </div>
+
+                <div class="disease-card">
+                    <div class="disease-number">04</div>
+                    <h3>白內障</h3>
+                    <p>瞳孔區亮度與混濁</p>
+                </div>
+
+                <div class="disease-card">
+                    <div class="disease-number">05</div>
+                    <h3>眼部異常</h3>
+                    <p>整體影像特徵</p>
+                </div>
+
+            </div>
+
+            <button
+                id="start-btn"
+                class="primary-btn"
+            >
+                開始 3 秒診前預檢 →
+            </button>
+
+            <p class="medical-note">
+                本系統僅供健康初篩參考，不能取代醫師診斷。
+            </p>
+
         </div>
-        <h1 class="logo">EYE-AI <span class="badge">v2.0</span></h1>
-        <div class="header-right"><span class="status-dot"></span> 系統連線</div>
-    </header>
 
-    <main>
-        <!-- 頁面 1：首頁說明 -->
-        <section id="intro-section" class="page-section">
-            <div class="intro-container">
-                <div class="hero-geo">
-                    <div class="circle-outer"></div>
-                    <div class="circle-inner"></div>
-                </div>
-                <h2>遠距醫療初篩系統</h2>
-                <p class="intro-desc">整合 AI 臉部特徵網格與色彩校正技術，協助您進行居家高頻率的眼部追蹤監測。</p>
-                <div class="geo-divider"><span>◆</span></div>
-                
-                <!-- 補回首頁說明與疾病卡片 -->
-                <h3 class="section-title">常見眼部疾病特徵與處理指引</h3>
-                <div class="disease-grid">
-                    <div class="disease-card"><div class="card-tag">01</div><h4>急性結膜炎</h4><p>眼白充血、刺痛。請停戴隱形眼鏡，冰敷並尋求醫囑。</p></div>
-                    <div class="disease-card"><div class="card-tag">02</div><h4>黃疸 (肝膽異常)</h4><p>眼白泛黃。請即刻停止飲酒，盡快至消化內科抽血檢查。</p></div>
-                    <div class="disease-card"><div class="card-tag">03</div><h4>高血脂 (角膜老年環)</h4><p>角膜邊緣現灰白環狀。預約內科抽血檢查血脂與心血管。</p></div>
-                    <div class="disease-card"><div class="card-tag">04</div><h4>白內障</h4><p>瞳孔中央混濁、畏光。外出務必配戴抗UV太陽眼鏡。</p></div>
-                    <div class="disease-card"><div class="card-tag">05</div><h4>針眼 (麥粒腫)</h4><p>眼瞼邊緣紅腫疼痛。用40°C溫毛巾熱敷促進油脂融化。</p></div>
+    </section>
+
+
+    <!-- =========================
+         檢測前預檢
+    ========================== -->
+
+    <section
+        id="check-section"
+        class="page-section hidden"
+    >
+
+        <div class="panel">
+
+            <div class="section-label">
+                PRE-SCREENING TRIAGE
+            </div>
+
+            <h2>檢測前確認</h2>
+
+            <p class="section-description">
+                為降低眼部狀態對影像分析的影響，
+                請先確認以下情況。
+            </p>
+
+            <div class="check-list">
+
+                <label class="check-item">
+                    <input
+                        type="checkbox"
+                        id="check-injury"
+                    >
+                    <span>
+                        近 3 個月內沒有眼部受傷或手術
+                    </span>
+                </label>
+
+                <label class="check-item">
+                    <input
+                        type="checkbox"
+                        id="check-contact"
+                    >
+                    <span>
+                        目前沒有配戴隱形眼鏡
+                    </span>
+                </label>
+
+                <label class="check-item">
+                    <input
+                        type="checkbox"
+                        id="check-drops"
+                    >
+                    <span>
+                        30 分鐘內沒有使用眼藥水
+                    </span>
+                </label>
+
+            </div>
+
+            <div
+                id="check-warning"
+                class="warning-box hidden"
+            >
+                <strong>目前不建議進行拍攝</strong>
+                <p id="check-warning-text"></p>
+            </div>
+
+            <button
+                id="continue-check-btn"
+                class="primary-btn"
+            >
+                確認並繼續 →
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         校色貼紙
+    ========================== -->
+
+    <section
+        id="calibration-section"
+        class="page-section hidden"
+    >
+
+        <div class="panel">
+
+            <div class="section-label">
+                COLOR CALIBRATION
+            </div>
+
+            <h2>準備校色貼紙</h2>
+
+            <p class="section-description">
+                請將校色貼紙放在眼睛下方顴骨附近，
+                並讓眼睛與貼紙同時進入手機畫面。
+            </p>
+
+            <div class="calibration-guide">
+
+                <div class="sticker-demo">
+
+                    <div class="color-square red"></div>
+                    <div class="color-square green"></div>
+                    <div class="color-square blue"></div>
+                    <div class="color-square white"></div>
+
                 </div>
 
-                <div class="action-area">
-                    <button id="go-to-scan-btn" class="primary-btn">啟動 AI 網格掃描 <span class="arrow">→</span></button>
+                <div class="guide-text">
+                    <p>✓ 眼睛與貼紙需同時入鏡</p>
+                    <p>✓ 避免強烈直射光</p>
+                    <p>✓ 不要讓貼紙產生明顯反光</p>
+                    <p>✓ 保持臉部穩定</p>
                 </div>
-            </div>
-        </section>
 
-        <!-- 頁面 2：掃描主畫面 -->
-        <section id="scan-section" class="page-section hidden">
-            <div class="camera-wrapper">
-                <div class="camera-container">
-                    <video id="camera-feed" autoplay playsinline></video>
-                    <canvas id="tracking-overlay"></canvas>
-                    
-                    <div class="hud-bracket top-left"></div>
-                    <div class="hud-bracket top-right"></div>
-                    <div class="hud-bracket bottom-left"></div>
-                    <div class="hud-bracket bottom-right"></div>
-                    
-                    <p class="instruction">AI 正在鎖定眼部特徵，請平視鏡頭</p>
-                </div>
             </div>
-            
-            <div class="action-area">
-                <button id="start-scan-btn" class="primary-btn">擷取特徵並分析</button>
-            </div>
-        </section>
 
-        <!-- 頁面 3：結果畫面 -->
-        <section id="result-section" class="page-section hidden">
-            <div class="result-card">
-                <div class="geo-header"><span class="geo-square"></span><h2 id="risk-level">分析完成</h2></div>
-                <div class="scanned-image-placeholder">
-                    <canvas id="snapshot-canvas"></canvas>
+            <button
+                id="start-camera-btn"
+                class="primary-btn"
+            >
+                開啟相機 →
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         掃描頁面
+    ========================== -->
+
+    <section
+        id="scan-section"
+        class="page-section hidden"
+    >
+
+        <div class="scan-header">
+
+            <div>
+                <div class="section-label">
+                    REAL-TIME SCAN
                 </div>
-                <p id="risk-description">綜合比對眼部特徵與疾病資料庫中...</p>
-                <div class="action-area">
-                    <button id="reset-btn" class="outline-btn">↺ 重新掃描</button>
-                </div>
+
+                <h2>眼部影像分析</h2>
             </div>
-        </section>
-    </main>
-    
-    <script src="analyzer.js"></script>
-    <script src="app.js"></script>
+
+            <div
+                id="camera-status"
+                class="status-badge"
+            >
+                初始化中
+            </div>
+
+        </div>
+
+
+        <div class="camera-wrapper">
+
+            <video
+                id="camera-video"
+                autoplay
+                playsinline
+                muted
+            ></video>
+
+            <canvas
+                id="overlay-canvas"
+            ></canvas>
+
+            <div class="hud-corner top-left"></div>
+            <div class="hud-corner top-right"></div>
+            <div class="hud-corner bottom-left"></div>
+            <div class="hud-corner bottom-right"></div>
+
+            <div
+                id="face-guide"
+                class="face-guide"
+            >
+                <span>FACE</span>
+            </div>
+
+            <div
+                id="scan-message"
+                class="scan-message"
+            >
+                請將眼睛與校色貼紙放入畫面
+            </div>
+
+        </div>
+
+
+        <div class="scan-info">
+
+            <div class="info-item">
+                <span>FACE</span>
+                <strong id="face-state">等待</strong>
+            </div>
+
+            <div class="info-item">
+                <span>EYE</span>
+                <strong id="eye-state">等待</strong>
+            </div>
+
+            <div class="info-item">
+                <span>LIGHT</span>
+                <strong id="light-state">等待</strong>
+            </div>
+
+        </div>
+
+
+        <button
+            id="capture-btn"
+            class="primary-btn"
+            disabled
+        >
+            擷取特徵並分析
+        </button>
+
+        <p class="medical-note">
+            請保持頭部穩定，避免瞇眼與劇烈晃動。
+        </p>
+
+    </section>
+
+
+    <!-- =========================
+         分析中
+    ========================== -->
+
+    <section
+        id="loading-section"
+        class="page-section hidden"
+    >
+
+        <div class="loading-panel">
+
+            <div class="scanner-animation"></div>
+
+            <div class="section-label">
+                EYE-AI PROCESSING
+            </div>
+
+            <h2 id="loading-title">
+                正在分析影像
+            </h2>
+
+            <p id="loading-text">
+                正在進行眼部定位……
+            </p>
+
+            <div class="progress-bar">
+                <div id="progress-fill"></div>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         結果頁
+    ========================== -->
+
+    <section
+        id="result-section"
+        class="page-section hidden"
+    >
+
+        <div class="result-panel">
+
+            <div class="section-label">
+                SCREENING REPORT
+            </div>
+
+            <h2>AI 初篩報告</h2>
+
+            <div
+                id="risk-indicator"
+                class="risk-indicator low"
+            >
+
+                <div class="risk-light"></div>
+
+                <div>
+                    <span>SCREENING LEVEL</span>
+                    <strong id="risk-level">
+                        低風險
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="result-grid">
+
+                <div class="result-image-box">
+
+                    <canvas
+                        id="result-canvas"
+                    ></canvas>
+
+                </div>
+
+
+                <div class="result-content">
+
+                    <div class="result-block">
+
+                        <h3>主要觀察</h3>
+
+                        <p id="result-finding">
+                            尚無資料
+                        </p>
+
+                    </div>
+
+
+                    <div class="result-block">
+
+                        <h3>系統說明</h3>
+
+                        <p id="result-description">
+                            尚無資料
+                        </p>
+
+                    </div>
+
+
+                    <div class="result-block">
+
+                        <h3>建議</h3>
+
+                        <p id="result-advice">
+                            尚無資料
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- 數值特徵 -->
+
+            <div class="feature-section">
+
+                <h3>影像特徵</h3>
+
+                <div class="feature-grid">
+
+                    <div class="feature-card">
+                        <span>a*</span>
+                        <strong id="feature-a">
+                            --
+                        </strong>
+                        <small>紅綠軸</small>
+                    </div>
+
+                    <div class="feature-card">
+                        <span>b*</span>
+                        <strong id="feature-b">
+                            --
+                        </strong>
+                        <small>黃藍軸</small>
+                    </div>
+
+                    <div class="feature-card">
+                        <span>L*</span>
+                        <strong id="feature-l">
+                            --
+                        </strong>
+                        <small>亮度</small>
+                    </div>
+
+                    <div class="feature-card">
+                        <span>RED</span>
+                        <strong id="feature-red">
+                            --
+                        </strong>
+                        <small>紅色比例</small>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="result-actions">
+
+                <button
+                    id="history-btn"
+                    class="secondary-btn"
+                >
+                    查看歷史紀錄
+                </button>
+
+                <button
+                    id="restart-btn"
+                    class="primary-btn"
+                >
+                    重新檢測
+                </button>
+
+            </div>
+
+            <p class="medical-note">
+                本結果屬於影像初篩，不代表疾病確診。
+                若有持續或明顯不適，請尋求專業醫療評估。
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         歷史紀錄
+    ========================== -->
+
+    <section
+        id="history-section"
+        class="page-section hidden"
+    >
+
+        <div class="panel">
+
+            <div class="section-label">
+                HISTORY
+            </div>
+
+            <h2>檢測紀錄</h2>
+
+            <div id="history-list"></div>
+
+            <button
+                id="back-result-btn"
+                class="secondary-btn"
+            >
+                返回報告
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<script src="analyzer.js"></script>
+<script src="app.js"></script>
+
 </body>
 </html>
