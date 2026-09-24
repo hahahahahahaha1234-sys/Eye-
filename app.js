@@ -404,15 +404,50 @@ async function runAnalysis() {
             );
 
 
-        const data =
-            await response.json();
+        /*
+         * 先讀取文字，再解析 JSON。
+         * 避免伺服器回傳空內容時直接觸發
+         * "Unexpected end of JSON input"。
+         */
+        const rawText =
+            await response.text();
+
+        let data = {};
+
+        if (rawText.trim()) {
+
+            try {
+
+                data =
+                    JSON.parse(rawText);
+
+            } catch (parseError) {
+
+                console.error(
+                    "伺服器回傳不是有效 JSON：",
+                    rawText
+                );
+
+                throw new Error(
+                    `伺服器回傳格式錯誤（HTTP ${response.status}）`
+                );
+            }
+        }
 
 
         if (!response.ok) {
 
             throw new Error(
                 data.error ||
-                "分析服務發生錯誤"
+                `分析服務發生錯誤（HTTP ${response.status}）`
+            );
+        }
+
+
+        if (!data || typeof data !== "object") {
+
+            throw new Error(
+                "分析服務沒有回傳有效結果"
             );
         }
 
