@@ -1,180 +1,852 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // 取得所有 DOM 元素
-    const introSection = document.getElementById('intro-section');
-    const scanSection = document.getElementById('scan-section');
-    const resultSection = document.getElementById('result-section');
-    
-    const backHomeBtn = document.getElementById('back-home-btn');
-    const goToScanBtn = document.getElementById('go-to-scan-btn');
-    const startScanBtn = document.getElementById('start-scan-btn');
-    const resetBtn = document.getElementById('reset-btn');
-    
-    const riskLevelText = document.getElementById('risk-level');
-    const riskDescText = document.getElementById('risk-description');
-    
-    const videoElement = document.getElementById('camera-feed');
-    const overlayCanvas = document.getElementById('tracking-overlay');
-    const snapshotCanvas = document.getElementById('snapshot-canvas');
-    const snapshotCtx = snapshotCanvas.getContext('2d');
-    
-    // 實體化 AI 引擎 (MediaPipe 現在僅負責在相機畫面上提供科技感網格，不參與最終診斷)
-    const analyzer = new window.FaceAnalyzer(videoElement, overlayCanvas);
+const video =
+    document.getElementById("camera-video");
 
-    // 啟動掃描 (進入相機頁面)
-    goToScanBtn.addEventListener('click', () => {
-        introSection.classList.add('hidden');
-        scanSection.classList.remove('hidden');
-        backHomeBtn.classList.remove('hidden');
-        analyzer.start();
+const overlayCanvas =
+    document.getElementById("overlay-canvas");
+
+const analyzer =
+    new EyeAnalyzer(
+        video,
+        overlayCanvas
+    );
+
+
+/* =========================
+   Page
+========================= */
+
+const sections = [
+    "home-section",
+    "check-section",
+    "calibration-section",
+    "scan-section",
+    "loading-section",
+    "result-section",
+    "history-section"
+];
+
+
+function showSection(id) {
+
+    sections.forEach(sectionId => {
+
+        const section =
+            document.getElementById(sectionId);
+
+        if (!section) return;
+
+        section.classList.toggle(
+            "hidden",
+            sectionId !== id
+        );
     });
+}
 
-    // 返回首頁
-    backHomeBtn.addEventListener('click', () => {
-        analyzer.stop();
-        scanSection.classList.add('hidden');
-        resultSection.classList.add('hidden');
-        introSection.classList.remove('hidden');
-        backHomeBtn.classList.add('hidden');
-    });
 
-    // 點擊「擷取特徵並分析」
-    startScanBtn.addEventListener('click', async () => {
-        // 變更按鈕狀態，防止重複點擊
-        startScanBtn.innerText = "AI 雲端分析中...";
-        startScanBtn.disabled = true;
+/* =========================
+   首頁
+========================= */
 
-        // 1. 處理截圖 (僅擷取純淨照片，不翻面、不疊加特徵網格)
-        snapshotCanvas.width = videoElement.videoWidth || 640;
-        snapshotCanvas.height = videoElement.videoHeight || 480;
-        snapshotCtx.drawImage(videoElement, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
+document
+    .getElementById("start-btn")
+    .addEventListener(
+        "click",
+        () => {
 
-        // 2. 將 Canvas 轉換為 Base64 圖片字串 (移除前綴)
-        const base64Image = snapshotCanvas.toDataURL('image/jpeg').split(',')[1];
+            showSection(
+                "check-section"
+            );
 
-        // 3. API 設定與模型選擇
-        const API_KEY = "AQ.Ab8RN6L1Y40nR2-hYbqDMKsJ8fzQ-lyi_Bjwenh74dUcjv0ylg"; 
-        const primaryModel = "gemini-3.8-flash"; // 速度最快、穩定度高的主力模型
-        const fallbackModel = "gemini-3.5-flash";  // 備用模型
+        }
+    );
 
-        // 設計給 Gemini 的嚴謹醫療診斷 Prompt
-        const promptText = `
-            你現在是一套專業的醫療眼部預檢系統 AI。請分析這張照片，並針對以下「特徵點與細節」進行嚴格判定：
-            1. 幾何特徵點 (對稱性)：觀察左右眼裂高度是否一致，有無單側下垂、極度不對稱或明顯腫脹。
-            2. 色彩特徵點 (鞏膜)：分析眼白區域是否異常泛黃（黃疸徵兆）或微血管異常充血發紅（結膜炎徵兆）。
-            3. 色彩特徵點 (角膜與瞳孔)：觀察角膜邊緣是否有灰白環，或瞳孔中央是否有異常混濁。
-            
-            請綜合以上特徵點的觀察結果。
-            請務必強制使用以下 JSON 格式回傳，不要包含任何其他 Markdown 標記或多餘文字：
-            {
-                "level": "高風險 (HIGH RISK) / 中風險 (MEDIUM RISK) / 低風險 (LOW RISK)",
-                "desc": "您的綜合分析與建議說明（約 50 到 80 字，請點出具體觀察到的異常特徵）"
+
+/* =========================
+   預檢
+========================= */
+
+document
+    .getElementById("continue-check-btn")
+    .addEventListener(
+        "click",
+        () => {
+
+            const injury =
+                document
+                    .getElementById(
+                        "check-injury"
+                    ).checked;
+
+            const contact =
+                document
+                    .getElementById(
+                        "check-contact"
+                    ).checked;
+
+            const drops =
+                document
+                    .getElementById(
+                        "check-drops"
+                    ).checked;
+
+            const warning =
+                document
+                    .getElementById(
+                        "check-warning"
+                    );
+
+            const warningText =
+                document
+                    .getElementById(
+                        "check-warning-text"
+                    );
+
+
+            if (!injury) {
+
+                warning.classList.remove(
+                    "hidden"
+                );
+
+                warningText.textContent =
+                    "系統建議近期有眼部受傷或手術者先停止自我檢測，改由醫療專業人員評估。";
+
+                return;
             }
+
+
+            if (!contact) {
+
+                warning.classList.remove(
+                    "hidden"
+                );
+
+                warningText.textContent =
+                    "請先摘除隱形眼鏡，再進行影像檢測。";
+
+                return;
+            }
+
+
+            if (!drops) {
+
+                warning.classList.remove(
+                    "hidden"
+                );
+
+                warningText.textContent =
+                    "若 30 分鐘內使用過眼藥水，請等待後再進行檢測。";
+
+                return;
+            }
+
+
+            warning.classList.add(
+                "hidden"
+            );
+
+            showSection(
+                "calibration-section"
+            );
+        }
+    );
+
+
+/* =========================
+   相機
+========================= */
+
+let camera = null;
+
+document
+    .getElementById("start-camera-btn")
+    .addEventListener(
+        "click",
+        startCamera
+    );
+
+
+async function startCamera() {
+
+    showSection(
+        "scan-section"
+    );
+
+    try {
+
+        const stream =
+            await navigator.mediaDevices
+                .getUserMedia({
+
+                    video: {
+                        facingMode: "user",
+                        width: {
+                            ideal: 1280
+                        },
+                        height: {
+                            ideal: 720
+                        }
+                    },
+
+                    audio: false
+                });
+
+
+        video.srcObject =
+            stream;
+
+
+        await video.play();
+
+
+        await analyzer.init();
+
+
+        camera =
+            new Camera(
+                video,
+                {
+
+                    onFrame:
+                        async () => {
+
+                            await analyzer
+                                .processFrame();
+
+                            updateCameraStatus();
+                        },
+
+                    width: 1280,
+                    height: 720
+
+                }
+            );
+
+
+        camera.start();
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "無法開啟相機，請確認瀏覽器已允許相機權限。"
+        );
+    }
+}
+
+
+/* =========================
+   相機狀態
+========================= */
+
+function updateCameraStatus() {
+
+    const status =
+        document.getElementById(
+            "camera-status"
+        );
+
+    const faceState =
+        document.getElementById(
+            "face-state"
+        );
+
+    const eyeState =
+        document.getElementById(
+            "eye-state"
+        );
+
+    const captureButton =
+        document.getElementById(
+            "capture-btn"
+        );
+
+
+    const results =
+        analyzer.latestResults;
+
+
+    if (
+        !results ||
+        !results.multiFaceLandmarks ||
+        !results.multiFaceLandmarks.length
+    ) {
+
+        status.textContent =
+            "找不到臉部";
+
+        faceState.textContent =
+            "未偵測";
+
+        eyeState.textContent =
+            "等待";
+
+        captureButton.disabled =
+            true;
+
+        return;
+    }
+
+
+    status.textContent =
+        "定位完成";
+
+    faceState.textContent =
+        "OK";
+
+    eyeState.textContent =
+        "OK";
+
+    captureButton.disabled =
+        false;
+}
+
+
+/* =========================
+   擷取分析
+========================= */
+
+document
+    .getElementById("capture-btn")
+    .addEventListener(
+        "click",
+        runAnalysis
+    );
+
+
+async function runAnalysis() {
+
+    if (
+        !analyzer.latestResults ||
+        !analyzer.latestResults.multiFaceLandmarks
+    ) {
+
+        alert(
+            "尚未偵測到眼部，請重新調整位置。"
+        );
+
+        return;
+    }
+
+
+    showSection(
+        "loading-section"
+    );
+
+
+    updateLoading(
+        "正在分析影像",
+        "正在取得眼部 ROI……",
+        20
+    );
+
+
+    await delay(300);
+
+
+    const features =
+        analyzer.getAnalysisReport();
+
+
+    updateLoading(
+        "色彩分析",
+        "正在計算 RGB / HSV / CIE L*a*b*……",
+        45
+    );
+
+
+    await delay(300);
+
+
+    const imageCanvas =
+        analyzer.captureImage();
+
+
+    const image =
+        imageCanvas
+            .toDataURL(
+                "image/jpeg",
+                0.78
+            )
+            .split(",")[1];
+
+
+    updateLoading(
+        "AI 分析",
+        "正在建立初篩報告……",
+        70
+    );
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/analyze",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        image,
+
+                        features
+
+                    })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "分析服務發生錯誤"
+            );
+        }
+
+
+        updateLoading(
+            "完成",
+            "正在建立結果頁面……",
+            100
+        );
+
+
+        await delay(500);
+
+
+        displayResult(
+            data,
+            features,
+            imageCanvas
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        showSection(
+            "scan-section"
+        );
+
+        alert(
+            "分析失敗：" +
+            error.message
+        );
+    }
+}
+
+
+/* =========================
+   Loading
+========================= */
+
+function updateLoading(
+    title,
+    text,
+    progress
+) {
+
+    document
+        .getElementById(
+            "loading-title"
+        )
+        .textContent = title;
+
+    document
+        .getElementById(
+            "loading-text"
+        )
+        .textContent = text;
+
+    document
+        .getElementById(
+            "progress-fill"
+        )
+        .style.width =
+            `${progress}%`;
+}
+
+
+function delay(ms) {
+
+    return new Promise(
+        resolve => setTimeout(
+            resolve,
+            ms
+        )
+    );
+}
+
+
+/* =========================
+   結果
+========================= */
+
+function displayResult(
+    report,
+    features,
+    imageCanvas
+) {
+
+    showSection(
+        "result-section"
+    );
+
+
+    const risk =
+        normalizeRisk(
+            report.level
+        );
+
+
+    const indicator =
+        document.getElementById(
+            "risk-indicator"
+        );
+
+
+    indicator.className =
+        `risk-indicator ${risk.className}`;
+
+
+    document
+        .getElementById(
+            "risk-level"
+        )
+        .textContent =
+            risk.text;
+
+
+    document
+        .getElementById(
+            "result-finding"
+        )
+        .textContent =
+            report.finding ||
+            "目前沒有額外觀察結果。";
+
+
+    document
+        .getElementById(
+            "result-description"
+        )
+        .textContent =
+            report.desc ||
+            "影像分析完成。";
+
+
+    document
+        .getElementById(
+            "result-advice"
+        )
+        .textContent =
+            report.advice ||
+            "如有持續不適，建議進一步就醫。";
+
+
+    /*
+     * 顯示影像
+     */
+
+    const resultCanvas =
+        document.getElementById(
+            "result-canvas"
+        );
+
+    resultCanvas.width =
+        imageCanvas.width;
+
+    resultCanvas.height =
+        imageCanvas.height;
+
+    resultCanvas
+        .getContext("2d")
+        .drawImage(
+            imageCanvas,
+            0,
+            0
+        );
+
+
+    /*
+     * 顯示數值
+     */
+
+    document
+        .getElementById(
+            "feature-a"
+        )
+        .textContent =
+            features.color?.aStar ??
+            "--";
+
+
+    document
+        .getElementById(
+            "feature-b"
+        )
+        .textContent =
+            features.color?.bStar ??
+            "--";
+
+
+    document
+        .getElementById(
+            "feature-l"
+        )
+        .textContent =
+            features.color?.lStar ??
+            "--";
+
+
+    document
+        .getElementById(
+            "feature-red"
+        )
+        .textContent =
+            features.color?.redRatio !== undefined
+                ? `${features.color.redRatio}%`
+                : "--";
+
+
+    saveReport(
+        report,
+        features
+    );
+}
+
+
+/* =========================
+   Risk
+========================= */
+
+function normalizeRisk(level) {
+
+    const text =
+        String(level || "")
+            .toLowerCase();
+
+
+    if (
+        text.includes("高") ||
+        text.includes("high")
+    ) {
+
+        return {
+            className: "high",
+            text: "高風險"
+        };
+    }
+
+
+    if (
+        text.includes("中") ||
+        text.includes("medium")
+    ) {
+
+        return {
+            className: "medium",
+            text: "中風險"
+        };
+    }
+
+
+    return {
+        className: "low",
+        text: "低風險"
+    };
+}
+
+
+/* =========================
+   History
+========================= */
+
+function saveReport(
+    report,
+    features
+) {
+
+    const history =
+        JSON.parse(
+            localStorage.getItem(
+                "eyeHistory"
+            ) || "[]"
+        );
+
+
+    history.unshift({
+
+        time:
+            new Date()
+                .toLocaleString(
+                    "zh-TW"
+                ),
+
+        level:
+            report.level ||
+            "低風險",
+
+        finding:
+            report.finding ||
+            "",
+
+        aStar:
+            features.color?.aStar,
+
+        bStar:
+            features.color?.bStar,
+
+        lStar:
+            features.color?.lStar
+    });
+
+
+    localStorage.setItem(
+        "eyeHistory",
+        JSON.stringify(
+            history.slice(0, 10)
+        )
+    );
+}
+
+
+/* =========================
+   History Page
+========================= */
+
+document
+    .getElementById(
+        "history-btn"
+    )
+    .addEventListener(
+        "click",
+        showHistory
+    );
+
+
+document
+    .getElementById(
+        "back-result-btn"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            showSection(
+                "result-section"
+            );
+
+        }
+    );
+
+
+function showHistory() {
+
+    showSection(
+        "history-section"
+    );
+
+
+    const container =
+        document.getElementById(
+            "history-list"
+        );
+
+
+    const history =
+        JSON.parse(
+            localStorage.getItem(
+                "eyeHistory"
+            ) || "[]"
+        );
+
+
+    if (!history.length) {
+
+        container.innerHTML = `
+            <div class="empty-history">
+                尚無檢測紀錄
+            </div>
         `;
 
-        const requestBody = {
-            contents: [{
-                parts: [
-                    { text: promptText },
-                    { inline_data: { mime_type: "image/jpeg", data: base64Image } }
-                ]
-            }],
-            generationConfig: {
-                temperature: 0.1, // 降低隨機性，讓醫療判斷更嚴謹穩定
-                response_mime_type: "application/json" // 強制回傳 JSON 格式
-            }
-        };
-// 4. 具備自動重試與完善錯誤攔截的 API 呼叫函式
-        async function fetchWithRetry(modelName, retries = 2, delay = 2000) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
-            
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(url, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(requestBody)
-                    });
+        return;
+    }
 
-                    // 先解析 JSON，不要直接 return
-                    const responseData = await response.json();
 
-                    if (response.ok) {
-                        // 防護機制：萬一照片被 Google 安全過濾器擋下，提示明確錯誤而非崩潰
-                        if (!responseData.candidates || responseData.candidates.length === 0) {
-                            throw new Error("API 成功回應，但影像可能被安全過濾器阻擋，無法取得診斷結果。");
-                        }
-                        return responseData;
-                    }
-                    
-                    const errMsg = responseData.error?.message || "未知錯誤";
-                    
-                    // 遇到伺服器滿載 (503) 或請求過多 (429) 時觸發重試
-                    if (errMsg.includes("high demand") || response.status === 503 || response.status === 429) {
-                        if (i === retries - 1) {
-                            // 修正 Bug：最後一次重試依然失敗時，強制拋出錯誤
-                            throw new Error(`伺服器持續滿載，已嘗試 ${retries} 次皆失敗，請稍後再試。`);
-                        }
-                        console.warn(`[嘗試 ${i+1}/${retries}] 模型 ${modelName} 伺服器滿載，${delay/1000} 秒後重試...`);
-                        await new Promise(res => setTimeout(res, delay));
-                        delay *= 2; // 指數退避：下次等更久
-                        continue;
-                    }
-                    
-                    // 其他錯誤直接拋出
-                    throw new Error(errMsg);
-                    
-                } catch (err) {
-                    // 確保錯誤能正確傳遞給外層，不會回傳 undefined
-                    if (i === retries - 1) throw err;
-                }
-            }
+    container.innerHTML =
+        history.map(
+            item => `
+
+                <div class="history-card">
+
+                    <div>
+                        <strong>
+                            ${escapeHTML(
+                                item.level
+                            )}
+                        </strong>
+
+                        <span>
+                            ${escapeHTML(
+                                item.time
+                            )}
+                        </span>
+                    </div>
+
+                    <p>
+                        ${escapeHTML(
+                            item.finding
+                        )}
+                    </p>
+
+                </div>
+
+            `
+        ).join("");
+}
+
+
+/* =========================
+   Restart
+========================= */
+
+document
+    .getElementById(
+        "restart-btn"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            showSection(
+                "check-section"
+            );
+
         }
+    );
 
-        // 5. 執行分析與錯誤處理
-        try {
-            let data;
-            try {
-                // 先嘗試呼叫主要模型
-                data = await fetchWithRetry(primaryModel);
-            } catch (primaryErr) {
-                console.warn("主要模型嚴重塞車，自動切換至備用模型...", primaryErr);
-                // 若主要模型失敗，降級呼叫備用模型
-                data = await fetchWithRetry(fallbackModel, 1, 1000); 
-            }
 
-            const aiResult = JSON.parse(data.candidates[0].content.parts[0].text);
+function escapeHTML(value) {
 
-            // 6. 顯示結果與更新 UI
-            analyzer.stop();
-            scanSection.classList.add('hidden');
-            resultSection.classList.remove('hidden');
-
-            riskLevelText.innerText = aiResult.level;
-            riskDescText.innerText = aiResult.desc;
-            
-            // 依風險程度改變標題顏色
-            if(aiResult.level.includes("高風險")) {
-                riskLevelText.style.color = "#ff4444";
-            } else if(aiResult.level.includes("中風險")) {
-                riskLevelText.style.color = "#ffcc00";
-            } else {
-                riskLevelText.style.color = "#00ffcc";
-            }
-
-        } catch (error) {
-            alert("雲端伺服器目前極度壅塞或連線異常，請稍後再試。\n錯誤細節：" + error.message);
-            console.error(error);
-        } finally {
-            // 恢復按鈕狀態
-            startScanBtn.innerText = "擷取特徵並分析";
-            startScanBtn.disabled = false;
-        }
-    });
-
-    // 重新掃描
-    resetBtn.addEventListener('click', () => {
-        resultSection.classList.add('hidden');
-        scanSection.classList.remove('hidden');
-        analyzer.start();
-    });
-});
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
