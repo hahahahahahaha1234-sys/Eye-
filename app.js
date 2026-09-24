@@ -83,8 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 response_mime_type: "application/json" // 強制回傳 JSON 格式
             }
         };
-
-        // 4. 具備自動重試 (Exponential Backoff) 的 API 呼叫函式
+// 4. 具備自動重試與完善錯誤攔截的 API 呼叫函式
         async function fetchWithRetry(modelName, retries = 2, delay = 2000) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
             
@@ -96,22 +95,36 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify(requestBody)
                     });
 
-                    if (response.ok) return await response.json();
+                    // 先解析 JSON，不要直接 return
+                    const responseData = await response.json();
+
+                    if (response.ok) {
+                        // 防護機制：萬一照片被 Google 安全過濾器擋下，提示明確錯誤而非崩潰
+                        if (!responseData.candidates || responseData.candidates.length === 0) {
+                            throw new Error("API 成功回應，但影像可能被安全過濾器阻擋，無法取得診斷結果。");
+                        }
+                        return responseData;
+                    }
                     
-                    const errData = await response.json();
-                    const errMsg = errData.error?.message || "未知錯誤";
+                    const errMsg = responseData.error?.message || "未知錯誤";
                     
                     // 遇到伺服器滿載 (503) 或請求過多 (429) 時觸發重試
                     if (errMsg.includes("high demand") || response.status === 503 || response.status === 429) {
+                        if (i === retries - 1) {
+                            // 修正 Bug：最後一次重試依然失敗時，強制拋出錯誤
+                            throw new Error(`伺服器持續滿載，已嘗試 ${retries} 次皆失敗，請稍後再試。`);
+                        }
                         console.warn(`[嘗試 ${i+1}/${retries}] 模型 ${modelName} 伺服器滿載，${delay/1000} 秒後重試...`);
                         await new Promise(res => setTimeout(res, delay));
                         delay *= 2; // 指數退避：下次等更久
                         continue;
                     }
+                    
                     // 其他錯誤直接拋出
                     throw new Error(errMsg);
                     
                 } catch (err) {
+                    // 確保錯誤能正確傳遞給外層，不會回傳 undefined
                     if (i === retries - 1) throw err;
                 }
             }
