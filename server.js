@@ -90,7 +90,6 @@ function serveStatic(
             requestPath
         );
 
-
     const normalized =
         path.normalize(filePath);
 
@@ -315,7 +314,43 @@ level 只能是：
             temperature: 0.1,
 
             response_mime_type:
-                "application/json"
+                "application/json",
+
+            response_schema: {
+
+                type: "OBJECT",
+
+                properties: {
+
+                    level: {
+                        type: "STRING",
+                        enum: [
+                            "低風險",
+                            "中風險",
+                            "高風險"
+                        ]
+                    },
+
+                    finding: {
+                        type: "STRING"
+                    },
+
+                    desc: {
+                        type: "STRING"
+                    },
+
+                    advice: {
+                        type: "STRING"
+                    }
+                },
+
+                required: [
+                    "level",
+                    "finding",
+                    "desc",
+                    "advice"
+                ]
+            }
         }
     };
 
@@ -331,7 +366,6 @@ level 只能是：
                 method: "POST",
 
                 headers: {
-
                     "Content-Type":
                         "application/json"
                 },
@@ -344,8 +378,36 @@ level 只能是：
         );
 
 
-    const data =
-        await response.json();
+    /*
+     * 不直接使用 response.json()。
+     * 若 Gemini 回傳空內容或非 JSON，
+     * 先保留原始文字，避免出現
+     * "Unexpected end of JSON input"。
+     */
+    const rawText =
+        await response.text();
+
+    let data = {};
+
+    if (rawText.trim()) {
+
+        try {
+
+            data =
+                JSON.parse(rawText);
+
+        } catch (parseError) {
+
+            console.error(
+                "Gemini 回應不是有效 JSON：",
+                rawText
+            );
+
+            throw new Error(
+                `Gemini 回應格式錯誤（HTTP ${response.status}）`
+            );
+        }
+    }
 
 
     if (!response.ok) {
@@ -368,7 +430,12 @@ level 只能是：
             ?.text;
 
 
-    if (!text) {
+    if (!text || !text.trim()) {
+
+        console.error(
+            "Gemini 沒有回傳文字內容：",
+            JSON.stringify(data)
+        );
 
         throw new Error(
             "Gemini 沒有回傳有效結果"
@@ -380,7 +447,12 @@ level 只能是：
 
         return JSON.parse(text);
 
-    } catch {
+    } catch (parseError) {
+
+        console.error(
+            "Gemini 文字內容不是有效 JSON：",
+            text
+        );
 
         throw new Error(
             "Gemini 回傳格式不是有效 JSON"
@@ -432,9 +504,36 @@ const server =
                     const body =
                         await readBody(req);
 
+                    if (!body.trim()) {
 
-                    const payload =
-                        JSON.parse(body);
+                        return sendJson(
+                            res,
+                            400,
+                            {
+                                error:
+                                    "請求內容為空"
+                            }
+                        );
+                    }
+
+                    let payload;
+
+                    try {
+
+                        payload =
+                            JSON.parse(body);
+
+                    } catch (parseError) {
+
+                        return sendJson(
+                            res,
+                            400,
+                            {
+                                error:
+                                    "請求 JSON 格式錯誤"
+                            }
+                        );
+                    }
 
 
                     if (!payload.image) {
