@@ -4,11 +4,6 @@
  */
 @import url("https://raw.githubusercontent.com/hahahahahahaha1234-sys/Eye-/48e29f93a9f640a54347e1f7737f3fb7ab263544/style.css");
 
-
-/* =========================
-   Responsive scan layout
-========================= */
-
 #scan-section {
     flex-direction: column;
     align-items: center;
@@ -17,7 +12,6 @@
     padding: clamp(28px, 5vw, 56px) 20px 110px;
 }
 
-
 #scan-section .scan-header,
 #scan-section .camera-wrapper,
 #scan-section .scan-info {
@@ -25,11 +19,9 @@
     flex-shrink: 0;
 }
 
-
 #scan-section .scan-header {
     margin-bottom: 24px;
 }
-
 
 #scan-section .camera-wrapper {
     width: min(1100px, 100%);
@@ -37,65 +29,101 @@
     min-height: 420px;
 }
 
-
 #scan-section .camera-wrapper video,
 #scan-section .camera-wrapper canvas {
     width: 100%;
     height: 100%;
 }
 
-
 #scan-section .scan-info {
     margin: 18px 0 22px;
 }
-
 
 #scan-section #capture-btn {
     min-width: min(360px, 100%);
 }
 
-
-/* Avoid the fixed help button covering important controls. */
 #help-btn,
 .help-button,
 #help-center-btn {
     z-index: 1000;
 }
 
+/* Keep the original deep-blue / cyan sci-fi visual language. */
+#scan-section {
+    background:
+        radial-gradient(circle at 50% 0%, rgba(0, 150, 255, 0.13), transparent 48%),
+        linear-gradient(rgba(0, 220, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 220, 255, 0.045) 1px, transparent 1px),
+        #02070d;
+    background-size: auto, 40px 40px, 40px 40px, auto;
+    color: #eafaff;
+}
 
-/* =========================
-   Phone portrait
-========================= */
+#scan-section .camera-wrapper {
+    border: 1px solid rgba(0, 220, 255, 0.32);
+    box-shadow: 0 0 50px rgba(0, 200, 255, 0.10), inset 0 0 30px rgba(0, 200, 255, 0.04);
+    background: #000;
+}
+
+#scan-section .scan-info .info-item {
+    border-color: rgba(0, 220, 255, 0.22);
+    background: rgba(7, 18, 28, 0.72);
+}
+
+#scan-section .scan-header h2,
+#scan-section .section-label,
+#scan-section .info-item strong,
+#scan-section .face-guide span {
+    color: #00eaff;
+}
+
+#scan-section .status-badge {
+    color: #00eaff;
+    border-color: rgba(0, 220, 255, 0.30);
+    background: rgba(0, 220, 255, 0.035);
+}
 
 @media (max-width: 700px) {
-
     .page-section {
         padding: 24px 12px 90px;
     }
 
     #scan-section {
         min-height: 100dvh;
-        padding: 24px 12px 110px;
+        padding: 22px 12px 110px;
         overflow-x: hidden;
+        align-items: center;
     }
 
+    /* Mobile keeps the tech-style header horizontal instead of crushing CJK text vertically. */
     #scan-section .scan-header {
         width: 100%;
-        align-items: flex-start;
-        gap: 14px;
+        display: flex;
+        flex-direction: row;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
         margin-bottom: 14px;
     }
 
+    #scan-section .scan-header > div:first-child {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
     #scan-section .scan-header h2 {
-        font-size: clamp(24px, 7vw, 32px);
-        line-height: 1.2;
+        font-size: clamp(27px, 8vw, 36px);
+        line-height: 1.15;
+        white-space: nowrap;
         word-break: keep-all;
+        writing-mode: horizontal-tb;
     }
 
     #scan-section .section-label {
         font-size: 10px;
         letter-spacing: 3px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
 
     #scan-section .status-badge {
@@ -110,7 +138,8 @@
         aspect-ratio: 4 / 3;
         min-height: 0;
         max-height: none;
-        border-width: 1px;
+        border: 1px solid rgba(0, 220, 255, 0.36);
+        box-shadow: 0 0 34px rgba(0, 200, 255, 0.12), inset 0 0 22px rgba(0, 200, 255, 0.05);
     }
 
     #scan-section .camera-wrapper video {
@@ -120,6 +149,7 @@
     #scan-section .face-guide {
         width: 72%;
         height: 68%;
+        border-color: rgba(0, 234, 255, 0.55);
     }
 
     #scan-section .scan-message {
@@ -129,6 +159,9 @@
         font-size: 11px;
         white-space: normal;
         text-align: center;
+        background: rgba(0, 7, 13, 0.78);
+        border: 1px solid rgba(0, 220, 255, 0.18);
+        color: #eafaff;
     }
 
     #scan-section .hud-corner {
@@ -179,29 +212,38 @@
         width: min(100%, 360px);
         min-height: 56px;
         font-size: 16px;
+        white-space: nowrap;
+        word-break: keep-all;
+        writing-mode: horizontal-tb;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #001015;
+        background: #00eaff;
+        border: 1px solid #00eaff;
+        box-shadow: 0 0 25px rgba(0, 234, 255, 0.18);
     }
 
     #scan-section .medical-note {
         max-width: 360px;
         text-align: center;
         margin-top: 12px;
+        color: #637a88;
+    }
+
+    #scan-section #capture-btn:disabled {
+        opacity: 0.38;
     }
 }
 
-
-/* =========================
-   Very narrow phones
-========================= */
-
 @media (max-width: 390px) {
-
     #scan-section {
         padding-left: 8px;
         padding-right: 8px;
     }
 
     #scan-section .scan-header h2 {
-        font-size: 23px;
+        font-size: 25px;
     }
 
     #scan-section .camera-wrapper {
