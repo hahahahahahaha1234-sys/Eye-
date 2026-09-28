@@ -1,11 +1,7 @@
-/*
- * Mobile interaction hotfix loader.
- * Load the last full application build, then install a capture-phase handler
- * so iOS taps on the analysis button cannot be swallowed by an overlay.
- */
+/* Mobile interaction hotfix loader. */
 (function () {
     const base = document.createElement("script");
-    base.src = "https://raw.githubusercontent.com/hahahahahahaha1234-sys/Eye-/3c6963c9e6a798dd2086a681bb797fed8f9b082f/app.js";
+    base.src = "https://cdn.jsdelivr.net/gh/hahahahahahaha1234-sys/Eye-@3c6963c9e6a798dd2086a681bb797fed8f9b082f/app.js";
     base.async = false;
 
     base.onload = function () {
@@ -24,15 +20,13 @@
                 event.stopImmediatePropagation();
                 return;
             }
-
             if (button.disabled) return;
 
             event.preventDefault();
             event.stopImmediatePropagation();
             handling = true;
 
-            /* Immediate visible acknowledgement, before any image work starts. */
-            let modal = document.getElementById("analysis-modal");
+            const modal = document.getElementById("analysis-modal");
             if (modal) {
                 modal.classList.add("open");
                 const text = document.getElementById("analysis-modal-text");
@@ -54,7 +48,6 @@
             }
         };
 
-        /* Capture phase wins over any accidental element layered above/below it. */
         button.addEventListener("click", forceAnalyze, true);
     };
 
