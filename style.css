@@ -84,11 +84,277 @@
     background: rgba(0, 220, 255, 0.035);
 }
 
+/* =========================
+   Unified app shell
+   ========================= */
+
+html,
+body {
+    background: #02070d;
+}
+
+body {
+    color: #eafaff;
+}
+
+.page-section {
+    min-height: 100dvh;
+    background:
+        radial-gradient(circle at 50% 0%, rgba(0, 150, 255, 0.10), transparent 50%),
+        linear-gradient(rgba(0, 220, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 220, 255, 0.035) 1px, transparent 1px),
+        #02070d;
+    background-size: auto, 40px 40px, 40px 40px, auto;
+    color: #eafaff;
+}
+
+.page-section .panel,
+.page-section .result-panel,
+.page-section .loading-panel {
+    background: rgba(4, 13, 22, 0.96);
+    color: #eafaff;
+    border: 1px solid rgba(0, 220, 255, 0.20);
+    box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35), inset 0 0 40px rgba(0, 180, 255, 0.025);
+}
+
+.page-section h1,
+.page-section h2,
+.page-section h3,
+.page-section strong,
+.page-section label,
+.page-section span {
+    color: inherit;
+}
+
+.section-description,
+.medical-note,
+.guide-text,
+.check-item span {
+    color: #8ea7b5;
+}
+
+/* Home = compact app landing / explanation screen. */
+#home-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px 90px;
+}
+
+#home-section .home-content {
+    width: min(980px, 100%);
+}
+
+#home-section .hero {
+    min-height: auto;
+    padding: clamp(28px, 5vw, 58px);
+    border: 1px solid rgba(0, 220, 255, 0.24);
+    background:
+        radial-gradient(circle at 75% 20%, rgba(0, 220, 255, 0.10), transparent 35%),
+        rgba(4, 13, 22, 0.90);
+    box-shadow: 0 0 70px rgba(0, 160, 255, 0.07), inset 0 0 50px rgba(0, 220, 255, 0.025);
+}
+
+#home-section .hero-description {
+    max-width: 760px;
+    color: #9bb0bc;
+}
+
+/* Keep the landing page concise; detailed project explanation remains available through the help center. */
+#home-section .home-block {
+    display: none !important;
+}
+
+#home-section .disease-grid {
+    margin: 28px 0 30px;
+}
+
+#home-section .disease-card {
+    background: rgba(0, 220, 255, 0.025);
+    border-color: rgba(0, 220, 255, 0.18);
+}
+
+#home-section .disease-card:hover {
+    border-color: rgba(0, 234, 255, 0.65);
+    box-shadow: 0 0 28px rgba(0, 220, 255, 0.08);
+}
+
+#home-section #start-btn {
+    min-width: min(360px, 100%);
+    min-height: 56px;
+}
+
+/* Make the existing action read as the first step in the new app flow. */
+#home-section #start-btn {
+    font-size: 0;
+}
+
+#home-section #start-btn::after {
+    content: "開始檢查前問卷  →";
+    font-size: 16px;
+}
+
+/* Questionnaire is the second app screen. */
+#check-section .panel,
+#calibration-section .panel {
+    width: min(760px, 100%);
+    padding: clamp(26px, 5vw, 48px);
+}
+
+#check-section .check-list {
+    margin: 28px 0;
+}
+
+#check-section #continue-check-btn {
+    min-height: 54px;
+    min-width: min(360px, 100%);
+    font-size: 0;
+}
+
+#check-section #continue-check-btn::after {
+    content: "前往拍照頁面  →";
+    font-size: 16px;
+}
+
+/* The old calibration screen becomes the short photo-preparation screen. */
+#calibration-section .panel {
+    text-align: left;
+}
+
+#calibration-section h2 {
+    font-size: 0;
+}
+
+#calibration-section h2::after {
+    content: "拍照前準備";
+    font-size: clamp(30px, 5vw, 44px);
+}
+
+#calibration-section .calibration-guide {
+    margin: 28px 0;
+    padding: 24px;
+    border: 1px solid rgba(0, 220, 255, 0.18);
+    background: rgba(0, 220, 255, 0.025);
+}
+
+#calibration-section #start-camera-btn {
+    width: min(360px, 100%);
+    min-height: 56px;
+}
+
+/* Persistent help icon: always visible at bottom-left. */
+#help-center-btn {
+    position: fixed !important;
+    left: 16px !important;
+    right: auto !important;
+    bottom: max(16px, env(safe-area-inset-bottom)) !important;
+    width: 52px !important;
+    min-width: 52px !important;
+    height: 52px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    display: grid !important;
+    place-items: center !important;
+    font-size: 0 !important;
+    color: #001015 !important;
+    background: #00eaff !important;
+    border: 1px solid rgba(0, 234, 255, 0.85) !important;
+    box-shadow: 0 0 28px rgba(0, 234, 255, 0.24) !important;
+}
+
+#help-center-btn::before {
+    content: "?";
+    font-size: 24px;
+    line-height: 1;
+    font-weight: 800;
+}
+
+#help-center-btn::after {
+    content: "說明";
+    position: absolute;
+    left: 62px;
+    white-space: nowrap;
+    padding: 5px 8px;
+    border: 1px solid rgba(0, 220, 255, 0.18);
+    background: rgba(3, 12, 20, 0.94);
+    color: #8ea7b5;
+    font-size: 11px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s ease;
+}
+
+#help-center-btn:hover::after,
+#help-center-btn:focus-visible::after {
+    opacity: 1;
+}
+
+/* Help modal stays in the same visual system. */
+#help-center-modal {
+    background: rgba(0, 5, 10, 0.82) !important;
+}
+
+.help-modal-panel {
+    background:
+        radial-gradient(circle at 70% 0%, rgba(0, 220, 255, 0.07), transparent 38%),
+        rgba(4, 13, 22, 0.98) !important;
+}
+
+/* Result and analysis pages remain dark and app-like. */
+#loading-section,
+#result-section,
+#history-section {
+    background:
+        radial-gradient(circle at 50% 0%, rgba(0, 150, 255, 0.10), transparent 50%),
+        linear-gradient(rgba(0, 220, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 220, 255, 0.035) 1px, transparent 1px),
+        #02070d;
+    background-size: auto, 40px 40px, 40px 40px, auto;
+}
+
 @media (max-width: 700px) {
     .page-section {
-        padding: 24px 12px 90px;
+        padding: 24px 12px 96px;
     }
 
+    #home-section {
+        padding: 16px 10px 96px;
+    }
+
+    #home-section .hero {
+        padding: 26px 18px;
+    }
+
+    #home-section .disease-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    #home-section .disease-card:last-child {
+        grid-column: 1 / -1;
+    }
+
+    #home-section #start-btn,
+    #check-section #continue-check-btn,
+    #calibration-section #start-camera-btn {
+        width: 100%;
+    }
+
+    #check-section .panel,
+    #calibration-section .panel {
+        padding: 26px 18px;
+    }
+
+    #help-center-btn {
+        left: 12px !important;
+        bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    }
+
+    #help-center-btn::after {
+        display: none;
+    }
+
+    /* Mobile keeps the tech-style scan header horizontal instead of crushing CJK text vertically. */
     #scan-section {
         min-height: 100dvh;
         padding: 22px 12px 110px;
@@ -96,7 +362,6 @@
         align-items: center;
     }
 
-    /* Mobile keeps the tech-style header horizontal instead of crushing CJK text vertically. */
     #scan-section .scan-header {
         width: 100%;
         display: flex;
