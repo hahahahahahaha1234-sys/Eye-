@@ -32,6 +32,16 @@ class EyeAnalyzer {
             left: [468, 469, 470, 471, 472],
             right: [473, 474, 475, 476, 477]
         };
+        this.scleraContours = {
+            left: [
+                33, 7, 163, 144, 145, 153, 154, 155,
+                133, 173, 157, 158, 159, 160, 161, 246
+            ],
+            right: [
+                263, 249, 390, 373, 374, 380, 381, 382,
+                362, 398, 384, 385, 386, 387, 388, 466
+            ]
+        };
     }
 
 
@@ -572,14 +582,136 @@ class EyeAnalyzer {
     }
 
 
+    analyzeScleraRegion(landmarks, eye, contourIds, irisCenterId) {
+
+        const box = this.getNormalizedEyeBox(landmarks, eye);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = 320;
+        canvas.height = 220;
+
+        const ctx = canvas.getContext("2d");
+
+        ctx.drawImage(
+            this.video,
+            box.x * this.video.videoWidth,
+            box.y * this.video.videoHeight,
+            box.width * this.video.videoWidth,
+            box.height * this.video.videoHeight,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+        const maskCanvas = document.createElement("canvas");
+        maskCanvas.width = canvas.width;
+        maskCanvas.height = canvas.height;
+
+        const maskCtx = maskCanvas.getContext("2d");
+        maskCtx.fillStyle = "#ffffff";
+        maskCtx.beginPath();
+
+        contourIds.forEach((id, index) => {
+            const point = landmarks[id];
+            const x = ((point.x - box.x) / box.width) * canvas.width;
+            const y = ((point.y - box.y) / box.height) * canvas.height;
+
+            if (index === 0) {
+                maskCtx.moveTo(x, y);
+            } else {
+                maskCtx.lineTo(x, y);
+            }
+        });
+
+        maskCtx.closePath();
+        maskCtx.fill();
+
+        const iris = landmarks[irisCenterId];
+        const irisX = ((iris.x - box.x) / box.width) * canvas.width;
+        const irisY = ((iris.y - box.y) / box.height) * canvas.height;
+        const irisRadius = Math.max(
+            14,
+            Math.min(canvas.width * 0.22, canvas.height * 0.30)
+        );
+
+        maskCtx.globalCompositeOperation = "destination-out";
+        maskCtx.beginPath();
+        maskCtx.ellipse(
+            irisX,
+            irisY,
+            irisRadius,
+            irisRadius * 0.85,
+            0,
+            0,
+            Math.PI * 2
+        );
+        maskCtx.fill();
+
+        const imageData = ctx.getImageData(
+            0, 0, canvas.width, canvas.height
+        );
+        const maskData = maskCtx.getImageData(
+            0, 0, canvas.width, canvas.height
+        );
+
+        let sumL = 0;
+        let suma = 0;
+        let sumb = 0;
+        let validPixels = 0;
+        let yellowPixels = 0;
+        let redPixels = 0;
+
+        for (let i = 0; i < imageData.data.length; i += 4) {
+            if (maskData.data[i + 3] === 0) continue;
+
+            const r = imageData.data[i];
+            const g = imageData.data[i + 1];
+            const b = imageData.data[i + 2];
+            const hsv = this.rgbToHsv(r, g, b);
+
+            if (hsv.v < 35 || hsv.s > 78) continue;
+
+            const lab = this.rgbToLab(r, g, b);
+            sumL += lab.L;
+            suma += lab.a;
+            sumb += lab.b;
+            validPixels++;
+
+            if (lab.L > 35 && lab.b > 12.0 && lab.a > -15 && lab.a < 35) {
+                yellowPixels++;
+            }
+
+            if (lab.L > 35 && lab.a > 42.0) {
+                redPixels++;
+            }
+        }
+
+        if (validPixels === 0) {
+            return {
+                validPixels: 0,
+                lStar: null,
+                aStar: null,
+                bStar: null,
+                yellowRatio: 0,
+                redRatio: 0
+            };
+        }
+
+        return {
+            validPixels,
+            lStar: Number((sumL / validPixels).toFixed(2)),
+            aStar: Number((suma / validPixels).toFixed(2)),
+            bStar: Number((sumb / validPixels).toFixed(2)),
+            yellowRatio: Number(((yellowPixels / validPixels) * 100).toFixed(2)),
+            redRatio: Number(((redPixels / validPixels) * 100).toFixed(2))
+        };
+    }
+
+
     getAnalysisReport() {
 
-        if (
-            !this.latestResults ||
-            !this.latestResults.multiFaceLandmarks ||
-            !this.latestResults.multiFaceLandmarks.length
-        ) {
-
+        if (!this.latestResults || !this.latestResults.multiFaceLandmarks || !this.latestResults.multiFaceLandmarks.length) {
             return {
                 quality: {
                     faceDetected: false,
@@ -588,128 +720,119 @@ class EyeAnalyzer {
             };
         }
 
-        const landmarks =
-            this.latestResults
-                .multiFaceLandmarks[0];
+        const landmarks = this.latestResults.multiFaceLandmarks[0];
 
-        const leftBox =
-            this.getNormalizedEyeBox(
-                landmarks,
-                this.eyeIndices.left
-            );
+        const leftBox = this.getNormalizedEyeBox(
+            landmarks,
+            this.eyeIndices.left
+        );
+        const rightBox = this.getNormalizedEyeBox(
+            landmarks,
+            this.eyeIndices.right
+        );
 
-        const rightBox =
-            this.getNormalizedEyeBox(
-                landmarks,
-                this.eyeIndices.right
-            );
+        const left = this.analyzeRegion(leftBox);
+        const right = this.analyzeRegion(rightBox);
 
-        const left =
-            this.analyzeRegion(leftBox);
-
-        const right =
-            this.analyzeRegion(rightBox);
-
-        const leftRed =
-            this.calculateRedRatio(leftBox);
-
-        const rightRed =
-            this.calculateRedRatio(rightBox);
+        const leftRed = this.calculateRedRatio(leftBox);
+        const rightRed = this.calculateRedRatio(rightBox);
 
         const lab = {
-
-            L:
-                (left.lab.L + right.lab.L) / 2,
-
-            a:
-                (left.lab.a + right.lab.a) / 2,
-
-            b:
-                (left.lab.b + right.lab.b) / 2
+            L: (left.lab.L + right.lab.L) / 2,
+            a: (left.lab.a + right.lab.a) / 2,
+            b: (left.lab.b + right.lab.b) / 2
         };
 
-        const redRatio =
-            (leftRed + rightRed) / 2;
+        const redRatio = (leftRed + rightRed) / 2;
+
+        const leftSclera = this.analyzeScleraRegion(
+            landmarks,
+            this.eyeIndices.left,
+            this.scleraContours.left,
+            this.irisIndices.left[0]
+        );
+
+        const rightSclera = this.analyzeScleraRegion(
+            landmarks,
+            this.eyeIndices.right,
+            this.scleraContours.right,
+            this.irisIndices.right[0]
+        );
+
+        const scleraSamples = [leftSclera, rightSclera].filter(
+            item => item.validPixels > 0
+        );
+
+        let sclera;
+
+        if (scleraSamples.length) {
+            const mean = key => scleraSamples.reduce(
+                (sum, item) => sum + item[key], 0
+            ) / scleraSamples.length;
+
+            sclera = {
+                lStar: Number(mean("lStar").toFixed(2)),
+                aStar: Number(mean("aStar").toFixed(2)),
+                bStar: Number(mean("bStar").toFixed(2)),
+                yellowRatio: Number(mean("yellowRatio").toFixed(2)),
+                redRatio: Number(mean("redRatio").toFixed(2)),
+                left: leftSclera,
+                right: rightSclera
+            };
+        } else {
+            sclera = {
+                lStar: Number(lab.L.toFixed(2)),
+                aStar: Number(lab.a.toFixed(2)),
+                bStar: Number(lab.b.toFixed(2)),
+                yellowRatio: 0,
+                redRatio: 0,
+                left: leftSclera,
+                right: rightSclera
+            };
+        }
+
+        const yellowFlag = sclera.bStar > 12.0 || sclera.yellowRatio >= 10;
+        const redFlag = sclera.aStar > 42.0 || sclera.redRatio >= 10;
 
         const findings = [];
 
-        /*
-         * 這些數值沿用計畫書提出的研究門檻，
-         * 目前定位為「提示條件」而不是臨床診斷。
-         */
+        findings.push(
+            yellowFlag
+                ? "鞏膜區域出現較明顯的黃色色彩特徵"
+                : "鞏膜區域未達計畫書設定的黃色提示條件"
+        );
 
-        if (lab.b > 12.0) {
-
-            findings.push(
-                "影像顯示較明顯的黃色色彩特徵"
-            );
-
-        } else {
-
-            findings.push(
-                "未發現明顯黃色色彩特徵"
-            );
-        }
-
-
-        if (lab.a > 42.0) {
-
-            findings.push(
-                "影像顯示較明顯的紅色色彩特徵"
-            );
-
-        } else {
-
-            findings.push(
-                "未發現明顯紅色色彩特徵"
-            );
-        }
-
+        findings.push(
+            redFlag
+                ? "眼部區域出現較明顯的紅色色彩特徵"
+                : "未達計畫書設定的紅色色彩提示條件"
+        );
 
         return {
-
             quality: {
                 faceDetected: true,
                 eyeDetected: true
             },
-
             color: {
-
-                rgb: {
-                    left,
-                    right
-                },
-
-                hsv: {
-                    left: left.hsv,
-                    right: right.hsv
-                },
-
-                lStar: Number(lab.L.toFixed(2)),
-                aStar: Number(lab.a.toFixed(2)),
-                bStar: Number(lab.b.toFixed(2)),
-
-                redRatio:
-                    Number(redRatio.toFixed(2))
+                rgb: { left, right },
+                hsv: { left: left.hsv, right: right.hsv },
+                lStar: sclera.lStar,
+                aStar: sclera.aStar,
+                bStar: sclera.bStar,
+                redRatio: sclera.redRatio,
+                sclera
             },
-
             geometry: {
-
-                leftEyeWidth:
-                    Number(
-                        leftBox.width.toFixed(4)
-                    ),
-
-                rightEyeWidth:
-                    Number(
-                        rightBox.width.toFixed(4)
-                    )
+                leftEyeWidth: Number(leftBox.width.toFixed(4)),
+                rightEyeWidth: Number(rightBox.width.toFixed(4))
             },
-
+            flags: {
+                yellow: yellowFlag,
+                red: redFlag
+            },
             findings
         };
     }
-
 
     captureImage() {
 
