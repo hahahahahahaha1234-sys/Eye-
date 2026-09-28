@@ -1,1279 +1,210 @@
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-
-:root {
-
-    --bg:
-        #02070d;
-
-    --panel:
-        rgba(7, 18, 28, 0.88);
-
-    --line:
-        rgba(0, 220, 255, 0.22);
-
-    --cyan:
-        #00eaff;
-
-    --blue:
-        #168cff;
-
-    --text:
-        #eafaff;
-
-    --muted:
-        #7f9aaa;
-}
-
-
-body {
-
-    min-height: 100vh;
-
-    background:
-        radial-gradient(
-            circle at 50% 0%,
-            rgba(0, 150, 255, 0.14),
-            transparent 45%
-        ),
-        var(--bg);
-
-    color: var(--text);
-
-    font-family:
-        Arial,
-        "Noto Sans TC",
-        sans-serif;
-}
-
-
-body::before {
-
-    content: "";
-
-    position: fixed;
-
-    inset: 0;
-
-    pointer-events: none;
-
-    opacity: 0.15;
-
-    background-image:
-        linear-gradient(
-            rgba(0, 220, 255, 0.1)
-            1px,
-            transparent 1px
-        ),
-        linear-gradient(
-            90deg,
-            rgba(0, 220, 255, 0.1)
-            1px,
-            transparent 1px
-        );
-
-    background-size:
-        40px 40px;
-}
-
-
-button {
-
-    font-family: inherit;
-
-    cursor: pointer;
-}
-
-
-.hidden {
-
-    display: none !important;
-}
-
-
-.app {
-
-    width: 100%;
-
-    min-height: 100vh;
-}
-
-
-.page-section {
-
-    min-height: 100vh;
-
-    width: 100%;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    padding: 40px 20px;
-}
+/*
+ * Base design is kept pinned to the previous stable stylesheet.
+ * The rules below are the responsive/layout overrides for the current UI.
+ */
+@import url("https://raw.githubusercontent.com/hahahahahahaha1234-sys/Eye-/48e29f93a9f640a54347e1f7737f3fb7ab263544/style.css");
 
 
 /* =========================
-   Hero
+   Responsive scan layout
 ========================= */
 
-.hero {
-
-    width: min(1000px, 100%);
-
-    text-align: center;
+#scan-section {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    padding: clamp(28px, 5vw, 56px) 20px 110px;
 }
 
 
-.system-tag,
-.section-label {
-
-    color: var(--cyan);
-
-    font-size: 12px;
-
-    letter-spacing: 4px;
-
-    font-weight: 700;
-
-    margin-bottom: 18px;
+#scan-section .scan-header,
+#scan-section .camera-wrapper,
+#scan-section .scan-info {
+    width: min(1100px, 100%);
+    flex-shrink: 0;
 }
 
 
-.hero h1 {
-
-    font-size:
-        clamp(42px, 8vw, 80px);
-
-    line-height: 1.05;
-
+#scan-section .scan-header {
     margin-bottom: 24px;
 }
 
 
-.hero h1 span {
-
-    display: block;
-
-    color: var(--cyan);
-
-    text-shadow:
-        0 0 30px
-        rgba(0, 234, 255, 0.45);
-}
-
-
-.hero-description {
-
-    max-width: 650px;
-
-    margin: 0 auto 40px;
-
-    color: var(--muted);
-
-    line-height: 1.8;
-
-    font-size: 16px;
-}
-
-
-/* =========================
-   Disease
-========================= */
-
-.disease-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(5, 1fr);
-
-    gap: 12px;
-
-    margin-bottom: 40px;
-}
-
-
-.disease-card {
-
-    padding: 22px 12px;
-
-    border:
-        1px solid var(--line);
-
-    background:
-        rgba(0, 220, 255, 0.025);
-
-    transition:
-        0.25s;
-}
-
-
-.disease-card:hover {
-
-    border-color:
-        rgba(0, 234, 255, 0.7);
-
-    transform:
-        translateY(-4px);
-
-    background:
-        rgba(0, 220, 255, 0.06);
-}
-
-
-.disease-number {
-
-    color: var(--cyan);
-
-    font-size: 11px;
-
-    letter-spacing: 2px;
-
-    margin-bottom: 12px;
-}
-
-
-.disease-card h3 {
-
-    font-size: 15px;
-
-    margin-bottom: 8px;
-}
-
-
-.disease-card p {
-
-    font-size: 12px;
-
-    color: var(--muted);
-}
-
-
-/* =========================
-   Buttons
-========================= */
-
-.primary-btn,
-.secondary-btn {
-
-    min-height: 52px;
-
-    padding:
-        0 30px;
-
-    border-radius: 4px;
-
-    font-weight: 700;
-
-    font-size: 15px;
-
-    transition:
-        0.2s;
-}
-
-
-.primary-btn {
-
-    color:
-        #001015;
-
-    background:
-        var(--cyan);
-
-    border:
-        1px solid var(--cyan);
-
-    box-shadow:
-        0 0 25px
-        rgba(0, 234, 255, 0.15);
-}
-
-
-.primary-btn:hover {
-
-    transform:
-        translateY(-2px);
-
-    box-shadow:
-        0 0 35px
-        rgba(0, 234, 255, 0.3);
-}
-
-
-.primary-btn:disabled {
-
-    opacity: 0.35;
-
-    cursor: not-allowed;
-
-    transform: none;
-}
-
-
-.secondary-btn {
-
-    color:
-        var(--cyan);
-
-    background:
-        transparent;
-
-    border:
-        1px solid var(--line);
-}
-
-
-.secondary-btn:hover {
-
-    border-color:
-        var(--cyan);
-
-    background:
-        rgba(0, 234, 255, 0.06);
-}
-
-
-.medical-note {
-
-    margin-top: 20px;
-
-    color:
-        #637a88;
-
-    font-size: 11px;
-
-    line-height: 1.7;
-}
-
-
-/* =========================
-   Panel
-========================= */
-
-.panel,
-.result-panel,
-.loading-panel {
-
-    width: min(900px, 100%);
-
-    padding:
-        clamp(25px, 5vw, 50px);
-
-    background:
-        var(--panel);
-
-    border:
-        1px solid var(--line);
-
-    box-shadow:
-        0 20px 80px
-        rgba(0, 0, 0, 0.45);
-
-    backdrop-filter:
-        blur(15px);
-}
-
-
-.panel h2,
-.result-panel h2,
-.loading-panel h2 {
-
-    font-size: 36px;
-
-    margin-bottom: 15px;
-}
-
-
-.section-description {
-
-    color: var(--muted);
-
-    line-height: 1.8;
-
-    margin-bottom: 30px;
-}
-
-
-/* =========================
-   Check
-========================= */
-
-.check-list {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 12px;
-
-    margin-bottom: 25px;
-}
-
-
-.check-item {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 14px;
-
-    padding: 18px;
-
-    border:
-        1px solid var(--line);
-
-    background:
-        rgba(0, 220, 255, 0.025);
-
-    cursor: pointer;
-}
-
-
-.check-item input {
-
-    width: 20px;
-
-    height: 20px;
-
-    accent-color:
-        var(--cyan);
-}
-
-
-.warning-box {
-
-    padding: 18px;
-
-    margin-bottom: 25px;
-
-    border:
-        1px solid #ff9d4d;
-
-    background:
-        rgba(255, 157, 77, 0.08);
-
-    color: #ffc58f;
-
-    line-height: 1.7;
-}
-
-
-/* =========================
-   Calibration
-========================= */
-
-.calibration-guide {
-
-    display: flex;
-
-    gap: 40px;
-
-    align-items: center;
-
-    margin:
-        35px 0;
-}
-
-
-.sticker-demo {
-
-    width: 180px;
-
-    aspect-ratio: 1;
-
-    padding: 15px;
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(2, 1fr);
-
-    gap: 5px;
-
-    background:
-        white;
-
-    transform:
-        rotate(-2deg);
-
-    box-shadow:
-        0 10px 40px
-        rgba(0, 0, 0, 0.3);
-}
-
-
-.color-square {
-
-    border: 1px solid #999;
-}
-
-
-.color-square.red {
-
-    background:
-        rgb(220, 40, 40);
-}
-
-
-.color-square.green {
-
-    background:
-        rgb(40, 180, 80);
-}
-
-
-.color-square.blue {
-
-    background:
-        rgb(40, 100, 220);
-}
-
-
-.color-square.white {
-
-    background:
-        rgb(245, 245, 245);
-}
-
-
-.guide-text {
-
-    color: var(--muted);
-
-    line-height: 2;
-}
-
-
-/* =========================
-   Scan
-========================= */
-
-.scan-header {
-
-    width: min(900px, 100%);
-
-    display: flex;
-
-    justify-content: space-between;
-
-    align-items: center;
-
-    margin-bottom: 20px;
-}
-
-
-.scan-header h2 {
-
-    font-size: 30px;
-}
-
-
-.status-badge {
-
-    padding:
-        8px 14px;
-
-    border:
-        1px solid var(--line);
-
-    color: var(--cyan);
-
-    font-size: 12px;
-}
-
-
-.camera-wrapper {
-
-    position: relative;
-
-    width: min(900px, 100%);
-
+#scan-section .camera-wrapper {
+    width: min(1100px, 100%);
     aspect-ratio: 16 / 9;
-
-    overflow: hidden;
-
-    background:
-        #000;
-
-    border:
-        1px solid var(--line);
-
-    box-shadow:
-        0 0 50px
-        rgba(0, 200, 255, 0.08);
+    min-height: 420px;
 }
 
 
-.camera-wrapper video {
-
+#scan-section .camera-wrapper video,
+#scan-section .camera-wrapper canvas {
     width: 100%;
-
     height: 100%;
-
-    object-fit: cover;
-
-    transform:
-        scaleX(-1);
 }
 
 
-.camera-wrapper canvas {
-
-    position: absolute;
-
-    inset: 0;
-
-    width: 100%;
-
-    height: 100%;
-
-    transform:
-        scaleX(-1);
-
-    pointer-events: none;
+#scan-section .scan-info {
+    margin: 18px 0 22px;
 }
 
 
-.hud-corner {
-
-    position: absolute;
-
-    width: 30px;
-
-    height: 30px;
-
-    border-color:
-        var(--cyan);
-
-    border-style:
-        solid;
+#scan-section #capture-btn {
+    min-width: min(360px, 100%);
 }
 
 
-.top-left {
-
-    top: 20px;
-    left: 20px;
-
-    border-width:
-        2px 0 0 2px;
-}
-
-
-.top-right {
-
-    top: 20px;
-    right: 20px;
-
-    border-width:
-        2px 2px 0 0;
-}
-
-
-.bottom-left {
-
-    bottom: 20px;
-    left: 20px;
-
-    border-width:
-        0 0 2px 2px;
-}
-
-
-.bottom-right {
-
-    bottom: 20px;
-    right: 20px;
-
-    border-width:
-        0 2px 2px 0;
-}
-
-
-.face-guide {
-
-    position: absolute;
-
-    left: 50%;
-
-    top: 50%;
-
-    width: 50%;
-
-    height: 70%;
-
-    transform:
-        translate(-50%, -50%);
-
-    border:
-        1px dashed
-        rgba(0, 234, 255, 0.45);
-
-    pointer-events: none;
-}
-
-
-.face-guide span {
-
-    position: absolute;
-
-    top: -22px;
-
-    left: 0;
-
-    font-size: 10px;
-
-    color: var(--cyan);
-
-    letter-spacing: 2px;
-}
-
-
-.scan-message {
-
-    position: absolute;
-
-    bottom: 25px;
-
-    left: 50%;
-
-    transform:
-        translateX(-50%);
-
-    padding:
-        8px 15px;
-
-    background:
-        rgba(0, 0, 0, 0.65);
-
-    font-size: 12px;
-
-    white-space: nowrap;
-}
-
-
-.scan-info {
-
-    width: min(900px, 100%);
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(3, 1fr);
-
-    margin:
-        15px 0 20px;
-}
-
-
-.info-item {
-
-    padding: 15px;
-
-    border:
-        1px solid var(--line);
-
-    text-align: center;
-}
-
-
-.info-item span {
-
-    display: block;
-
-    font-size: 10px;
-
-    color: var(--muted);
-
-    letter-spacing: 2px;
-
-    margin-bottom: 7px;
-}
-
-
-.info-item strong {
-
-    color: var(--cyan);
+/* Avoid the fixed help button covering important controls. */
+#help-btn,
+.help-button,
+#help-center-btn {
+    z-index: 1000;
 }
 
 
 /* =========================
-   Loading
+   Phone portrait
 ========================= */
 
-.loading-panel {
+@media (max-width: 700px) {
 
-    text-align: center;
-}
-
-
-.scanner-animation {
-
-    width: 100px;
-
-    height: 100px;
-
-    margin:
-        0 auto 35px;
-
-    border:
-        2px solid var(--line);
-
-    border-top-color:
-        var(--cyan);
-
-    border-radius:
-        50%;
-
-    animation:
-        spin 1s linear infinite;
-}
-
-
-@keyframes spin {
-
-    to {
-        transform:
-            rotate(360deg);
-    }
-}
-
-
-.progress-bar {
-
-    width: 100%;
-
-    height: 4px;
-
-    margin-top: 30px;
-
-    background:
-        rgba(255,255,255,0.08);
-}
-
-
-#progress-fill {
-
-    width: 0%;
-
-    height: 100%;
-
-    background:
-        var(--cyan);
-
-    transition:
-        width 0.3s;
-}
-
-
-/* =========================
-   Result
-========================= */
-
-.result-panel {
-
-    width: min(1000px, 100%);
-}
-
-
-.risk-indicator {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 15px;
-
-    padding: 20px;
-
-    margin:
-        25px 0 30px;
-
-    border:
-        1px solid var(--line);
-}
-
-
-.risk-light {
-
-    width: 20px;
-
-    height: 20px;
-
-    border-radius:
-        50%;
-}
-
-
-.risk-indicator.low {
-
-    border-color:
-        rgba(60, 220, 130, 0.4);
-}
-
-
-.risk-indicator.low .risk-light {
-
-    background:
-        #42e08b;
-
-    box-shadow:
-        0 0 20px
-        rgba(66, 224, 139, 0.5);
-}
-
-
-.risk-indicator.medium {
-
-    border-color:
-        rgba(255, 200, 50, 0.4);
-}
-
-
-.risk-indicator.medium .risk-light {
-
-    background:
-        #ffc832;
-
-    box-shadow:
-        0 0 20px
-        rgba(255, 200, 50, 0.5);
-}
-
-
-.risk-indicator.high {
-
-    border-color:
-        rgba(255, 80, 80, 0.4);
-}
-
-
-.risk-indicator.high .risk-light {
-
-    background:
-        #ff5050;
-
-    box-shadow:
-        0 0 20px
-        rgba(255, 80, 80, 0.5);
-}
-
-
-.risk-indicator span {
-
-    display: block;
-
-    font-size: 10px;
-
-    letter-spacing: 2px;
-
-    color: var(--muted);
-
-    margin-bottom: 4px;
-}
-
-
-.risk-indicator strong {
-
-    font-size: 22px;
-}
-
-
-.result-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap: 30px;
-}
-
-
-.result-image-box {
-
-    background: #000;
-
-    border:
-        1px solid var(--line);
-
-    overflow: hidden;
-}
-
-
-.result-image-box canvas {
-
-    display: block;
-
-    width: 100%;
-
-    height: auto;
-}
-
-
-.result-block {
-
-    margin-bottom: 25px;
-}
-
-
-.result-block h3 {
-
-    color: var(--cyan);
-
-    font-size: 14px;
-
-    margin-bottom: 8px;
-}
-
-
-.result-block p {
-
-    color: var(--muted);
-
-    line-height: 1.8;
-}
-
-
-/* =========================
-   Features
-========================= */
-
-.feature-section {
-
-    margin-top: 35px;
-
-    padding-top: 30px;
-
-    border-top:
-        1px solid var(--line);
-}
-
-
-.feature-section h3 {
-
-    margin-bottom: 15px;
-}
-
-
-.feature-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(4, 1fr);
-
-    gap: 10px;
-}
-
-
-.feature-card {
-
-    padding: 18px;
-
-    border:
-        1px solid var(--line);
-
-    background:
-        rgba(0, 220, 255, 0.025);
-}
-
-
-.feature-card span {
-
-    display: block;
-
-    font-size: 11px;
-
-    color: var(--cyan);
-
-    margin-bottom: 8px;
-}
-
-
-.feature-card strong {
-
-    display: block;
-
-    font-size: 24px;
-
-    margin-bottom: 5px;
-}
-
-
-.feature-card small {
-
-    color: var(--muted);
-}
-
-
-.result-actions {
-
-    display: flex;
-
-    gap: 12px;
-
-    margin-top: 35px;
-}
-
-
-/* =========================
-   History
-========================= */
-
-#history-list {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 10px;
-
-    margin:
-        25px 0;
-}
-
-
-.history-card {
-
-    padding: 18px;
-
-    border:
-        1px solid var(--line);
-
-    background:
-        rgba(0, 220, 255, 0.025);
-}
-
-
-.history-card div {
-
-    display: flex;
-
-    justify-content: space-between;
-
-    margin-bottom: 8px;
-}
-
-
-.history-card strong {
-
-    color: var(--cyan);
-}
-
-
-.history-card span {
-
-    color: var(--muted);
-
-    font-size: 11px;
-}
-
-
-.history-card p {
-
-    color: var(--muted);
-
-    line-height: 1.6;
-
-    font-size: 13px;
-}
-
-
-.empty-history {
-
-    color: var(--muted);
-
-    padding:
-        30px;
-
-    text-align: center;
-}
-
-
-/* =========================
-   Responsive
-========================= */
-
-@media (
-    max-width: 750px
-) {
-
-    .disease-grid {
-
-        grid-template-columns:
-            repeat(2, 1fr);
+    .page-section {
+        padding: 24px 12px 90px;
     }
 
-
-    .result-grid {
-
-        grid-template-columns:
-            1fr;
+    #scan-section {
+        min-height: 100dvh;
+        padding: 24px 12px 110px;
+        overflow-x: hidden;
     }
 
-
-    .feature-grid {
-
-        grid-template-columns:
-            repeat(2, 1fr);
-    }
-
-
-    .calibration-guide {
-
-        flex-direction: column;
-
-        align-items: flex-start;
-    }
-
-
-    .scan-header {
-
-        align-items: flex-start;
-
-        gap: 15px;
-
-        flex-direction: column;
-    }
-}
-
-
-@media (
-    max-width: 450px
-) {
-
-    .disease-grid {
-
-        grid-template-columns:
-            1fr;
-    }
-
-
-    .feature-grid {
-
-        grid-template-columns:
-            1fr 1fr;
-    }
-
-
-    .result-actions {
-
-        flex-direction: column;
-    }
-
-
-    .primary-btn,
-    .secondary-btn {
-
+    #scan-section .scan-header {
         width: 100%;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 14px;
+    }
+
+    #scan-section .scan-header h2 {
+        font-size: clamp(24px, 7vw, 32px);
+        line-height: 1.2;
+        word-break: keep-all;
+    }
+
+    #scan-section .section-label {
+        font-size: 10px;
+        letter-spacing: 3px;
+        margin-bottom: 10px;
+    }
+
+    #scan-section .status-badge {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        font-size: 10px;
+        padding: 7px 9px;
+    }
+
+    #scan-section .camera-wrapper {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        min-height: 0;
+        max-height: none;
+        border-width: 1px;
+    }
+
+    #scan-section .camera-wrapper video {
+        object-fit: cover;
+    }
+
+    #scan-section .face-guide {
+        width: 72%;
+        height: 68%;
+    }
+
+    #scan-section .scan-message {
+        bottom: 14px;
+        max-width: calc(100% - 28px);
+        padding: 8px 10px;
+        font-size: 11px;
+        white-space: normal;
+        text-align: center;
+    }
+
+    #scan-section .hud-corner {
+        width: 24px;
+        height: 24px;
+    }
+
+    #scan-section .top-left,
+    #scan-section .top-right {
+        top: 12px;
+    }
+
+    #scan-section .bottom-left,
+    #scan-section .bottom-right {
+        bottom: 12px;
+    }
+
+    #scan-section .top-left,
+    #scan-section .bottom-left {
+        left: 12px;
+    }
+
+    #scan-section .top-right,
+    #scan-section .bottom-right {
+        right: 12px;
+    }
+
+    #scan-section .scan-info {
+        width: 100%;
+        grid-template-columns: repeat(3, 1fr);
+        margin: 12px 0 16px;
+    }
+
+    #scan-section .info-item {
+        padding: 12px 5px;
+    }
+
+    #scan-section .info-item span {
+        font-size: 9px;
+        letter-spacing: 1px;
+    }
+
+    #scan-section .info-item strong {
+        font-size: 14px;
+    }
+
+    #scan-section #capture-btn {
+        width: min(100%, 360px);
+        min-height: 56px;
+        font-size: 16px;
+    }
+
+    #scan-section .medical-note {
+        max-width: 360px;
+        text-align: center;
+        margin-top: 12px;
+    }
+}
+
+
+/* =========================
+   Very narrow phones
+========================= */
+
+@media (max-width: 390px) {
+
+    #scan-section {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    #scan-section .scan-header h2 {
+        font-size: 23px;
+    }
+
+    #scan-section .camera-wrapper {
+        aspect-ratio: 3 / 2;
     }
 }
