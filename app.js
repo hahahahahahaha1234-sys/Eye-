@@ -628,6 +628,7 @@ async function startCamera() {
         overlayCanvas.style.visibility = "visible";
 
         await analyzer.init();
+        analyzer.releaseFrozenFrame();
 
 
         camera =
@@ -710,8 +711,7 @@ function updateCameraStatus() {
         eyeState.textContent =
             "等待";
 
-        captureButton.disabled =
-            true;
+        captureButton.disabled = false;
 
         return;
     }
@@ -726,8 +726,7 @@ function updateCameraStatus() {
     eyeState.textContent =
         "OK";
 
-    captureButton.disabled =
-        false;
+    captureButton.disabled = false;
 }
 
 
@@ -738,150 +737,109 @@ function updateCameraStatus() {
 const captureAnalysisButton =
     document.getElementById("capture-btn");
 
-let analysisTapLocked = false;
+let analysisRunning = false;
 
-function handleAnalysisTap(event) {
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
-
-    if (analysisTapLocked) return;
-
-    /*
-     * Do not silently ignore a tap just because the live status loop
-     * temporarily marked the button disabled on mobile Safari.
-     * runAnalysis() performs the authoritative face/eye check and shows
-     * a message when a usable frame is not available.
-     */
-    captureAnalysisButton.disabled = false;
-    analysisTapLocked = true;
-
-    Promise.resolve(runAnalysis())
-        .catch(error => {
-            console.error("Analysis tap error:", error);
-            alert("分析啟動失敗：" + (error?.message || "未知錯誤"));
-        })
-        .finally(() => {
-            analysisTapLocked = false;
-        });
-}
-
-captureAnalysisButton.addEventListener("click", handleAnalysisTap);
-
-/* iOS Safari can occasionally miss a synthesized click on camera UIs. */
-captureAnalysisButton.addEventListener(
-    "touchend",
-    event => {
-        handleAnalysisTap(event);
-    },
-    { passive: false }
-);
+captureAnalysisButton.disabled = false;
+captureAnalysisButton.addEventListener("click", runAnalysis);
 
 
-async function runAnalysis() {
+async function runAnalysis(event) {
+    if (event) event.preventDefault();
+    if (analysisRunning) return;
 
-    const captureButton = document.getElementById("capture-btn");
     const modal = document.getElementById("analysis-modal");
     const modalText = document.getElementById("analysis-modal-text");
 
-    if (
-        !analyzer.latestResults ||
-        !analyzer.latestResults.multiFaceLandmarks ||
-        !analyzer.latestResults.multiFaceLandmarks.length
-    ) {
-        alert("尚未偵測到眼部，請重新調整位置。");
-        return;
-    }
-
-    // First action: lock the UI and show feedback immediately.
-    captureButton.disabled = true;
-
-    if (modal) modal.classList.add("open");
-    if (modalText) modalText.textContent = "正在擷取目前影像……";
-
-    // Give the browser one paint cycle so the click never looks unresponsive.
-    await new Promise(resolve =>
-        requestAnimationFrame(() =>
-            requestAnimationFrame(resolve)
-        )
-    );
+    analysisRunning = true;
+    captureAnalysisButton.disabled = true;
 
     try {
-        // Capture the exact current frame BEFORE any asynchronous analysis.
-        const imageCanvas = analyzer.captureImage();
+        if (!video.srcObject || video.readyState < 2) {
+            throw new Error("相機影像尚未準備完成，請稍候再試");
+        }
 
-        // Freeze the visible preview. Pausing alone can still leave MediaPipe's
-        // overlay updating, so stop drawing/processing by pausing and clearing overlay.
+        const results = analyzer.latestResults;
+        if (!results?.multiFaceLandmarks?.length) {
+            throw new Error("目前沒有偵測到臉部與眼睛，請將雙眼完整放入掃描框");
+        }
+
+        /*
+         * One authoritative snapshot:
+         * 1) capture current pixels
+         * 2) freeze video + stop MediaPipe camera loop
+         * 3) analyze the frozen pixels
+         * 4) send the same JPEG to AI
+         */
+        const imageCanvas = analyzer.freezeFrame();
+
         video.pause();
-        overlayCanvas.style.visibility = "hidden";
+        if (camera && typeof camera.stop === "function") {
+            camera.stop();
+        }
 
-        if (modalText) modalText.textContent = "影像已定格，正在擷取眼部特徵……";
+        // Paint the captured still frame into the existing overlay canvas.
+        overlayCanvas.style.visibility = "visible";
+        overlayCanvas.width = imageCanvas.width;
+        overlayCanvas.height = imageCanvas.height;
+        const frozenCtx = overlayCanvas.getContext("2d");
+        frozenCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        frozenCtx.drawImage(imageCanvas, 0, 0);
+
+        if (modal) modal.classList.add("open");
+        if (modalText) modalText.textContent = "特徵分析中，請稍等........";
+
+        await new Promise(resolve =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve))
+        );
 
         const features = analyzer.getAnalysisReport();
-
         const image = imageCanvas
-            .toDataURL("image/jpeg", 0.78)
+            .toDataURL("image/jpeg", 0.82)
             .split(",")[1];
-
-        if (modalText) modalText.textContent = "特徵分析中，請稍等……";
 
         const response = await fetch("/api/analyze", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                image,
-                features
-            })
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image, features })
         });
 
         const rawText = await response.text();
-        let data = {};
+        let data;
 
-        if (rawText.trim()) {
-            try {
-                data = JSON.parse(rawText);
-            } catch (parseError) {
-                console.error("伺服器回傳不是有效 JSON：", rawText);
-                throw new Error(`伺服器回傳格式錯誤（HTTP ${response.status}）`);
-            }
+        try {
+            data = rawText.trim() ? JSON.parse(rawText) : {};
+        } catch {
+            throw new Error(`分析服務回傳格式錯誤（HTTP ${response.status}）`);
         }
 
         if (!response.ok) {
-            throw new Error(
-                data.error ||
-                `分析服務發生錯誤（HTTP ${response.status}）`
-            );
+            throw new Error(data.error || `分析服務錯誤（HTTP ${response.status}）`);
         }
 
         if (!data || typeof data !== "object") {
             throw new Error("分析服務沒有回傳有效結果");
         }
 
-        if (modalText) modalText.textContent = "分析完成，正在建立結果……";
-        await delay(180);
-
         if (modal) modal.classList.remove("open");
         displayResult(data, features, imageCanvas);
 
     } catch (error) {
-        console.error(error);
-
+        console.error("Capture / analysis failed:", error);
         if (modal) modal.classList.remove("open");
+        alert("無法完成分析：" + (error?.message || "未知錯誤"));
+
+        analyzer.releaseFrozenFrame();
         overlayCanvas.style.visibility = "visible";
 
         try {
             await video.play();
+            if (camera && typeof camera.start === "function") camera.start();
         } catch (resumeError) {
-            console.warn("無法恢復相機預覽：", resumeError);
+            console.warn("Camera resume failed:", resumeError);
         }
-
-        captureButton.disabled = false;
-        showSection("scan-section");
-
-        alert("分析失敗：" + error.message);
+    } finally {
+        analysisRunning = false;
+        captureAnalysisButton.disabled = false;
     }
 }
 
