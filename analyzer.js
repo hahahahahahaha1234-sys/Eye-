@@ -145,26 +145,6 @@ class EyeAnalyzer {
     }
 
 
-    drawFace(landmarks) {
-
-        if (
-            typeof drawConnectors !== "undefined" &&
-            typeof FACEMESH_TESSELATION !== "undefined"
-        ) {
-
-            drawConnectors(
-                this.ctx,
-                landmarks,
-                FACEMESH_TESSELATION,
-                {
-                    color: "rgba(0, 220, 255, 0.12)",
-                    lineWidth: 0.5
-                }
-            );
-        }
-    }
-
-
     drawEyeRegions(landmarks) {
         [this.eyeIndices.left, this.eyeIndices.right].forEach(eye => {
             const contour = eye.contour.map(id => landmarks[id]).filter(Boolean);
@@ -451,71 +431,6 @@ class EyeAnalyzer {
     }
 
 
-    calculateRedRatio(box) {
-
-        const canvas =
-            document.createElement("canvas");
-
-        canvas.width = 120;
-        canvas.height = 80;
-
-        const ctx =
-            canvas.getContext("2d");
-
-        ctx.drawImage(
-            this.getSourceImage(),
-            box.x * (this.frozenFrame?.width || this.video.videoWidth),
-            box.y * (this.frozenFrame?.height || this.video.videoHeight),
-            box.width * (this.frozenFrame?.width || this.video.videoWidth),
-            box.height * (this.frozenFrame?.height || this.video.videoHeight),
-            0,
-            0,
-            canvas.width,
-            canvas.height
-        );
-
-        const imageData =
-            ctx.getImageData(
-                0,
-                0,
-                canvas.width,
-                canvas.height
-            );
-
-        let redPixels = 0;
-        let totalPixels = 0;
-
-        for (
-            let i = 0;
-            i < imageData.data.length;
-            i += 4
-        ) {
-
-            const r = imageData.data[i];
-            const g = imageData.data[i + 1];
-            const b = imageData.data[i + 2];
-
-            const hsv =
-                this.rgbToHsv(r, g, b);
-
-            if (
-                (hsv.h < 25 || hsv.h > 340) &&
-                hsv.s > 30 &&
-                hsv.v > 25
-            ) {
-
-                redPixels++;
-            }
-
-            totalPixels++;
-        }
-
-        return totalPixels === 0
-            ? 0
-            : (redPixels / totalPixels) * 100;
-    }
-
-
     analyzeScleraRegion(landmarks, eye, contourIds, irisIds) {
 
         const box = this.getNormalizedEyeBox(landmarks, eye);
@@ -747,16 +662,11 @@ class EyeAnalyzer {
         const left = this.analyzeRegion(leftBox);
         const right = this.analyzeRegion(rightBox);
 
-        const leftRed = this.calculateRedRatio(leftBox);
-        const rightRed = this.calculateRedRatio(rightBox);
-
         const lab = {
             L: (left.lab.L + right.lab.L) / 2,
             a: (left.lab.a + right.lab.a) / 2,
             b: (left.lab.b + right.lab.b) / 2
         };
-
-        const redRatio = (leftRed + rightRed) / 2;
 
         const leftSclera = this.analyzeScleraRegion(
             landmarks,
@@ -869,15 +779,6 @@ class EyeAnalyzer {
             },
             findings
         };
-    }
-
-    captureImage() {
-        const source = this.frozenFrame || this.freezeFrame();
-        const canvas = document.createElement("canvas");
-        canvas.width = source.width || this.video.videoWidth;
-        canvas.height = source.height || this.video.videoHeight;
-        canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
-        return canvas;
     }
 
     captureVisibleFrame(sourceCanvas = null) {
