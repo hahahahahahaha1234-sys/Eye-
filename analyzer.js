@@ -516,129 +516,136 @@ class EyeAnalyzer {
     }
 
 
-    analyzeScleraRegion(landmarks, eye, contourIds, irisCenterId) {
+    analyzeScleraRegion(landmarks, eye, contourIds, irisIds) {
 
         const box = this.getNormalizedEyeBox(landmarks, eye);
+        const sourceWidth = this.frozenFrame?.width || this.video.videoWidth;
+        const sourceHeight = this.frozenFrame?.height || this.video.videoHeight;
 
         const canvas = document.createElement("canvas");
-        canvas.width = 320;
-        canvas.height = 220;
-
-        const ctx = canvas.getContext("2d");
+        canvas.width = 360;
+        canvas.height = 240;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
         ctx.drawImage(
             this.getSourceImage(),
-            box.x * (this.frozenFrame?.width || this.video.videoWidth),
-            box.y * (this.frozenFrame?.height || this.video.videoHeight),
-            box.width * (this.frozenFrame?.width || this.video.videoWidth),
-            box.height * (this.frozenFrame?.height || this.video.videoHeight),
-            0,
-            0,
-            canvas.width,
-            canvas.height
+            box.x * sourceWidth,
+            box.y * sourceHeight,
+            box.width * sourceWidth,
+            box.height * sourceHeight,
+            0, 0, canvas.width, canvas.height
         );
 
+        // Eye aperture mask from the full MediaPipe eyelid contour.
         const maskCanvas = document.createElement("canvas");
         maskCanvas.width = canvas.width;
         maskCanvas.height = canvas.height;
+        const maskCtx = maskCanvas.getContext("2d", { willReadFrequently: true });
 
-        const maskCtx = maskCanvas.getContext("2d");
-        maskCtx.fillStyle = "#ffffff";
+        maskCtx.fillStyle = "#fff";
         maskCtx.beginPath();
-
         contourIds.forEach((id, index) => {
-            const point = landmarks[id];
-            const x = ((point.x - box.x) / box.width) * canvas.width;
-            const y = ((point.y - box.y) / box.height) * canvas.height;
-
-            if (index === 0) {
-                maskCtx.moveTo(x, y);
-            } else {
-                maskCtx.lineTo(x, y);
-            }
+            const p = landmarks[id];
+            const x = ((p.x - box.x) / box.width) * canvas.width;
+            const y = ((p.y - box.y) / box.height) * canvas.height;
+            if (index === 0) maskCtx.moveTo(x, y);
+            else maskCtx.lineTo(x, y);
         });
-
         maskCtx.closePath();
         maskCtx.fill();
 
-        const iris = landmarks[irisCenterId];
-        const irisX = ((iris.x - box.x) / box.width) * canvas.width;
-        const irisY = ((iris.y - box.y) / box.height) * canvas.height;
-        const irisRadius = Math.max(
-            14,
-            Math.min(canvas.width * 0.22, canvas.height * 0.30)
-        );
+        // Exclude iris/pupil using refined iris landmarks. Radius is derived from
+        // the actual iris points instead of a fixed guessed radius.
+        const irisPoints = irisIds
+            .map(id => landmarks[id])
+            .filter(Boolean)
+            .map(p => ({
+                x: ((p.x - box.x) / box.width) * canvas.width,
+                y: ((p.y - box.y) / box.height) * canvas.height
+            }));
 
-        maskCtx.globalCompositeOperation = "destination-out";
-        maskCtx.beginPath();
-        maskCtx.ellipse(
-            irisX,
-            irisY,
-            irisRadius,
-            irisRadius * 0.85,
-            0,
-            0,
-            Math.PI * 2
-        );
-        maskCtx.fill();
+        if (irisPoints.length) {
+            const cx = irisPoints.reduce((v,p)=>v+p.x,0) / irisPoints.length;
+            const cy = irisPoints.reduce((v,p)=>v+p.y,0) / irisPoints.length;
+            let radius = 0;
+            irisPoints.forEach(p => {
+                radius = Math.max(radius, Math.hypot(p.x-cx, p.y-cy));
+            });
+            radius = Math.max(10, radius * 1.28);
 
-        const imageData = ctx.getImageData(
-            0, 0, canvas.width, canvas.height
-        );
-        const maskData = maskCtx.getImageData(
-            0, 0, canvas.width, canvas.height
-        );
+            maskCtx.globalCompositeOperation = "destination-out";
+            maskCtx.beginPath();
+            maskCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+            maskCtx.fill();
+            maskCtx.globalCompositeOperation = "source-over";
+        }
 
-        let sumL = 0;
-        let suma = 0;
-        let sumb = 0;
-        let validPixels = 0;
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const maskData = maskCtx.getImageData(0, 0, canvas.width, canvas.height);
+
+        const samples = [];
         let yellowPixels = 0;
         let redPixels = 0;
 
-        for (let i = 0; i < imageData.data.length; i += 4) {
-            if (maskData.data[i + 3] === 0) continue;
+        // Reject mask edges (eyelashes/eyelids) by requiring neighbouring pixels
+        // to remain inside the eye aperture.
+        const inside = (x,y) => {
+            if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) return false;
+            return maskData.data[(y * canvas.width + x) * 4 + 3] > 200;
+        };
 
-            const r = imageData.data[i];
-            const g = imageData.data[i + 1];
-            const b = imageData.data[i + 2];
-            const hsv = this.rgbToHsv(r, g, b);
+        for (let y = 3; y < canvas.height - 3; y++) {
+            for (let x = 3; x < canvas.width - 3; x++) {
+                if (!inside(x,y) || !inside(x-3,y) || !inside(x+3,y) ||
+                    !inside(x,y-3) || !inside(x,y+3)) continue;
 
-            if (hsv.v < 35 || hsv.s > 78) continue;
+                const i = (y * canvas.width + x) * 4;
+                const r = imageData.data[i];
+                const g = imageData.data[i+1];
+                const bl = imageData.data[i+2];
+                const hsv = this.rgbToHsv(r,g,bl);
 
-            const lab = this.rgbToLab(r, g, b);
-            sumL += lab.L;
-            suma += lab.a;
-            sumb += lab.b;
-            validPixels++;
+                // Sclera is relatively bright and not extremely saturated.
+                // This removes most skin, shadow, eyelashes and screen-black pixels.
+                if (hsv.v < 42 || hsv.s > 68) continue;
 
-            if (lab.L > 35 && lab.b > 12.0 && lab.a > -15 && lab.a < 35) {
-                yellowPixels++;
-            }
+                const lab = this.rgbToLab(r,g,bl);
+                if (lab.L < 38) continue;
 
-            if (lab.L > 35 && lab.a > 42.0) {
-                redPixels++;
+                samples.push(lab);
+                if (lab.b > 12 && lab.a > -12 && lab.a < 32) yellowPixels++;
+                if (lab.a > 42) redPixels++;
             }
         }
 
-        if (validPixels === 0) {
+        if (samples.length < 80) {
             return {
-                validPixels: 0,
-                lStar: null,
-                aStar: null,
-                bStar: null,
-                yellowRatio: 0,
-                redRatio: 0
+                validPixels: samples.length,
+                reliable: false,
+                lStar: null, aStar: null, bStar: null,
+                yellowRatio: 0, redRatio: 0
             };
         }
 
+        const median = values => {
+            const sorted = [...values].sort((x,y)=>x-y);
+            const m = Math.floor(sorted.length/2);
+            return sorted.length % 2 ? sorted[m] : (sorted[m-1]+sorted[m])/2;
+        };
+
+        // Median is much less sensitive than whole-eye averaging to skin/iris contamination.
+        const lStar = median(samples.map(v=>v.L));
+        const aStar = median(samples.map(v=>v.a));
+        const bStar = median(samples.map(v=>v.b));
+
         return {
-            validPixels,
-            lStar: Number((sumL / validPixels).toFixed(2)),
-            aStar: Number((suma / validPixels).toFixed(2)),
-            bStar: Number((sumb / validPixels).toFixed(2)),
-            yellowRatio: Number(((yellowPixels / validPixels) * 100).toFixed(2)),
-            redRatio: Number(((redPixels / validPixels) * 100).toFixed(2))
+            validPixels: samples.length,
+            reliable: true,
+            lStar: Number(lStar.toFixed(2)),
+            aStar: Number(aStar.toFixed(2)),
+            bStar: Number(bStar.toFixed(2)),
+            yellowRatio: Number((yellowPixels / samples.length * 100).toFixed(2)),
+            redRatio: Number((redPixels / samples.length * 100).toFixed(2))
         };
     }
 
@@ -700,18 +707,18 @@ class EyeAnalyzer {
             landmarks,
             this.eyeIndices.left,
             this.scleraContours.left,
-            this.irisIndices.left[0]
+            this.irisIndices.left
         );
 
         const rightSclera = this.analyzeScleraRegion(
             landmarks,
             this.eyeIndices.right,
             this.scleraContours.right,
-            this.irisIndices.right[0]
+            this.irisIndices.right
         );
 
         const scleraSamples = [leftSclera, rightSclera].filter(
-            item => item.validPixels > 0
+            item => item.reliable && item.validPixels >= 80
         );
 
         let sclera;
@@ -728,7 +735,8 @@ class EyeAnalyzer {
                 yellowRatio: Number(mean("yellowRatio").toFixed(2)),
                 redRatio: Number(mean("redRatio").toFixed(2)),
                 left: leftSclera,
-                right: rightSclera
+                right: rightSclera,
+                reliable: true
             };
         } else {
             sclera = {
@@ -738,19 +746,24 @@ class EyeAnalyzer {
                 yellowRatio: 0,
                 redRatio: 0,
                 left: leftSclera,
-                right: rightSclera
+                right: rightSclera,
+                reliable: false
             };
         }
 
-        const yellowFlag = sclera.bStar > 12.0 || sclera.yellowRatio >= 10;
-        const redFlag = sclera.aStar > 42.0 || sclera.redRatio >= 10;
+        const yellowFlag = sclera.reliable &&
+            (sclera.bStar > 12.0 || sclera.yellowRatio >= 12);
+        const redFlag = sclera.reliable &&
+            (sclera.aStar > 42.0 || sclera.redRatio >= 12);
 
         const findings = [];
 
         findings.push(
-            yellowFlag
-                ? "鞏膜區域出現較明顯的黃色色彩特徵"
-                : "鞏膜區域未達計畫書設定的黃色提示條件"
+            !sclera.reliable
+                ? "眼白有效像素不足，無法可靠判讀黃色特徵"
+                : yellowFlag
+                    ? "鞏膜區域出現較明顯的黃色色彩特徵"
+                    : "鞏膜區域未達計畫書設定的黃色提示條件"
         );
 
         findings.push(
