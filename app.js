@@ -792,7 +792,9 @@ async function runAnalysis(event) {
          * 3) analyze the frozen pixels
          * 4) send the same JPEG to AI
          */
-        const imageCanvas = analyzer.freezeFrame();
+        const fullFrameCanvas = analyzer.freezeFrame();
+        const imageCanvas = analyzer.captureVisibleFrame(fullFrameCanvas);
+        const eyeCloseupCanvas = analyzer.captureEyeCloseup(fullFrameCanvas);
 
         video.pause();
         if (camera && typeof camera.stop === "function") {
@@ -816,13 +818,17 @@ async function runAnalysis(event) {
 
         const features = analyzer.getAnalysisReport();
         const image = imageCanvas
-            .toDataURL("image/jpeg", 0.82)
+            .toDataURL("image/jpeg", 0.86)
             .split(",")[1];
+
+        const eyeCloseup = eyeCloseupCanvas
+            ? eyeCloseupCanvas.toDataURL("image/jpeg", 0.9).split(",")[1]
+            : null;
 
         const response = await fetch("/api/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image, features })
+            body: JSON.stringify({ image, eyeCloseup, features })
         });
 
         const rawText = await response.text();
