@@ -80,14 +80,12 @@ const diseaseInfo = {
         solution:
             "早期可依醫師建議調整眼鏡度數、增加照明或減少眩光。當白內障已明顯影響日常生活時，眼科醫師可能評估白內障手術；手術是目前移除白內障的有效治療方式。"
     },
-    abnormal: {
-        title: "其他眼部異常",
-        subtitle: "影像出現無法歸類的特徵",
-        description:
-            "眼睛外觀改變可能有很多原因，包含乾眼、刺激、感染、角膜或其他眼部問題。單張照片無法完整判斷。",
-        solution:
-            "先避免揉眼及可能造成刺激的因素；如果有疼痛、視力明顯下降、畏光、持續紅腫或其他新出現的症狀，建議接受眼科檢查，而不是只依賴本系統結果。"
-    }
+        stye: {
+            title: "針眼／麥粒腫",
+            subtitle: "眼瞼邊緣紅腫、按壓疼痛、局部突起",
+            description: "作品計畫書將針眼列為眼瞼邊緣的局部病徵，常見表現為紅腫、疼痛與局部突起。本系統僅依外觀影像提供初篩提示。",
+            solution: "可用約 40°C 的乾淨溫毛巾熱敷 10–15 分鐘，每日 3–4 次，並保持手部清潔、避免揉眼或自行擠壓。若症狀惡化、影響視力或持續未改善，請就醫評估。"
+        }
 };
 
 
@@ -323,9 +321,9 @@ function initHelpCenter() {
                     <strong>04　白內障</strong>
                     <span>瞳孔區亮度與混濁</span>
                 </button>
-                <button class="help-disease-card" data-disease="abnormal" type="button">
-                    <strong>05　其他眼部異常</strong>
-                    <span>整體影像特徵</span>
+                <button class="help-disease-card" data-disease="stye" type="button">
+                    <strong>05　針眼</strong>
+                    <span>眼瞼紅腫、疼痛與局部突起</span>
                 </button>
             </div>
 
@@ -431,7 +429,7 @@ function initHelpCenter() {
         "conjunctivitis",
         "arcus",
         "cataract",
-        "abnormal"
+        "stye"
     ];
 
     document
