@@ -281,13 +281,28 @@ ${JSON.stringify(
 - 若照片不是直接拍攝真人，而是拍攝另一個螢幕/印刷照片，必須在 desc 提醒影像來源會降低色彩與細節可靠度。
 - 風險分級只是本作品的初篩提示，不代表醫療診斷。
 
+你必須逐項完成五個檢查，不能省略任何一項。每一項 status 只能是：
+"detected"（照片有可見疑似特徵）
+"not_detected"（照片可判讀但未見該特徵）
+"uncertain"（角度、解析度、遮擋、螢幕翻拍等原因不足以可靠判讀）
+
+每一項 evidence 必須簡短寫出你在照片中實際看到或未看到什麼；不能只寫「無」。
+白內障與角膜老年環尤其必須獨立檢查，不得因黃/紅色 flags 為 false 就略過。
+
 請只回傳 JSON：
 
 {
     "level": "低風險",
-    "finding": "主要觀察到的影像特徵",
+    "finding": "整合五項檢查後最重要的主要觀察",
     "desc": "以一般人能理解的方式說明",
-    "advice": "下一步建議"
+    "advice": "下一步建議",
+    "screening": {
+        "jaundice": {"status":"not_detected","evidence":"黃色鞏膜相關影像證據"},
+        "conjunctivitis": {"status":"not_detected","evidence":"廣泛結膜紅相關影像證據"},
+        "stye": {"status":"not_detected","evidence":"眼瞼局部紅腫、隆起或膿點相關影像證據"},
+        "cataract": {"status":"not_detected","evidence":"瞳孔/晶狀體區灰白或混濁相關影像證據"},
+        "arcus": {"status":"not_detected","evidence":"角膜周邊灰白或藍白環狀特徵相關影像證據"}
+    }
 }
 
 level 只能是：
@@ -360,6 +375,53 @@ level 只能是：
 
                     advice: {
                         type: "STRING"
+                    },
+
+                    screening: {
+                        type: "OBJECT",
+                        properties: {
+                            jaundice: {
+                                type: "OBJECT",
+                                properties: {
+                                    status: { type: "STRING", enum: ["detected", "not_detected", "uncertain"] },
+                                    evidence: { type: "STRING" }
+                                },
+                                required: ["status", "evidence"]
+                            },
+                            conjunctivitis: {
+                                type: "OBJECT",
+                                properties: {
+                                    status: { type: "STRING", enum: ["detected", "not_detected", "uncertain"] },
+                                    evidence: { type: "STRING" }
+                                },
+                                required: ["status", "evidence"]
+                            },
+                            stye: {
+                                type: "OBJECT",
+                                properties: {
+                                    status: { type: "STRING", enum: ["detected", "not_detected", "uncertain"] },
+                                    evidence: { type: "STRING" }
+                                },
+                                required: ["status", "evidence"]
+                            },
+                            cataract: {
+                                type: "OBJECT",
+                                properties: {
+                                    status: { type: "STRING", enum: ["detected", "not_detected", "uncertain"] },
+                                    evidence: { type: "STRING" }
+                                },
+                                required: ["status", "evidence"]
+                            },
+                            arcus: {
+                                type: "OBJECT",
+                                properties: {
+                                    status: { type: "STRING", enum: ["detected", "not_detected", "uncertain"] },
+                                    evidence: { type: "STRING" }
+                                },
+                                required: ["status", "evidence"]
+                            }
+                        },
+                        required: ["jaundice", "conjunctivitis", "stye", "cataract", "arcus"]
                     }
                 },
 
@@ -367,7 +429,8 @@ level 只能是：
                     "level",
                     "finding",
                     "desc",
-                    "advice"
+                    "advice",
+                    "screening"
                 ]
             }
         }
@@ -592,10 +655,42 @@ const server =
                         );
 
                     if (!scleraReliable) {
-                        result.level = result.level === "高風險" ? "高風險" : "中風險";
-                        result.finding = "眼白有效像素不足，這張影像無法可靠判讀黃色鞏膜特徵。";
-                        result.desc = "系統沒有取得足夠且可用的鞏膜（眼白）像素，因此不以整張臉、皮膚或環境色偏推論黃疸相關影像特徵。";
-                        result.advice = "請在均勻光線下重新拍攝，雙眼睜開並直視鏡頭；本系統僅供影像初篩，若本人出現眼白或皮膚明顯變黃等情況，請接受專業醫療評估。";
+                        result.screening = result.screening || {};
+                        result.screening.jaundice = {
+                            status: "uncertain",
+                            evidence: "眼白有效像素不足，無法以鞏膜色彩數值可靠判讀黃色特徵。"
+                        };
+
+                        // Sclera color failure must not erase visual findings such as
+                        // stye, cataract-like opacity, or corneal arcus.
+                        const visualDetected = ["stye", "cataract", "arcus", "conjunctivitis"]
+                            .some(key => result.screening?.[key]?.status === "detected");
+
+                        if (!visualDetected && result.level === "低風險") {
+                            result.level = "中風險";
+                        }
+
+                        if (!visualDetected) {
+                            result.desc =
+                                (result.desc ? result.desc + " " : "") +
+                                "另外，眼白有效像素不足，因此黃色鞏膜部分無法可靠判讀。";
+                        }
+                    }
+
+                    result.screening = result.screening || {};
+
+                    if (yellowFlag) {
+                        result.screening.jaundice = {
+                            status: "detected",
+                            evidence: `鞏膜色彩分析達黃色提示條件（b*=${sclera.bStar ?? "N/A"}，黃色像素比例=${sclera.yellowRatio ?? "N/A"}%）。`
+                        };
+                    }
+
+                    if (redFlag) {
+                        result.screening.conjunctivitis = {
+                            status: "detected",
+                            evidence: `眼白/結膜色彩分析達紅色提示條件（a*=${sclera.aStar ?? "N/A"}，紅色像素比例=${sclera.redRatio ?? "N/A"}%）。`
+                        };
                     }
 
                     if (yellowFlag) {
