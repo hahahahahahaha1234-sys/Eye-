@@ -918,6 +918,16 @@ function delay(ms) {
    結果
 ========================= */
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
 function displayResult(
     report,
     features,
@@ -978,6 +988,30 @@ function displayResult(
         .textContent =
             report.advice ||
             "如有持續不適，建議進一步就醫。";
+
+
+    const screeningBox = document.getElementById("screening-summary");
+    if (screeningBox) {
+        const labels = {
+            jaundice: "黃疸／黃色鞏膜",
+            conjunctivitis: "急性結膜炎",
+            stye: "針眼／麥粒腫",
+            cataract: "白內障樣混濁",
+            arcus: "角膜老年環"
+        };
+        const statusText = {
+            detected: "疑似特徵",
+            not_detected: "未見明顯特徵",
+            uncertain: "無法可靠判讀"
+        };
+        const rows = Object.entries(labels).map(([key,label]) => {
+            const item = report.screening?.[key];
+            const status = statusText[item?.status] || "無資料";
+            const evidence = item?.evidence || "未取得判讀依據";
+            return `<div style="margin:0 0 12px"><strong>${label}｜${status}</strong><br><span style="opacity:.78">${escapeHtml(evidence)}</span></div>`;
+        });
+        screeningBox.innerHTML = rows.join("");
+    }
 
 
     /*
