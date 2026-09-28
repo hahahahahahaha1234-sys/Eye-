@@ -740,7 +740,29 @@ const captureAnalysisButton =
 let analysisRunning = false;
 
 captureAnalysisButton.disabled = false;
-captureAnalysisButton.addEventListener("click", runAnalysis);
+
+function startAnalysisFromUserGesture(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    runAnalysis(event);
+}
+
+/*
+ * iPhone/iPad Safari: pointerup is a direct user gesture and is more reliable
+ * than waiting for the synthesized click over a live camera/canvas stack.
+ * Desktop/mouse keeps the normal click path.
+ */
+if (window.PointerEvent) {
+    captureAnalysisButton.addEventListener("pointerup", startAnalysisFromUserGesture, { passive: false });
+} else {
+    captureAnalysisButton.addEventListener("touchend", startAnalysisFromUserGesture, { passive: false });
+}
+captureAnalysisButton.addEventListener("click", event => {
+    if (event.pointerType === "touch" || ("ontouchstart" in window && window.PointerEvent)) return;
+    startAnalysisFromUserGesture(event);
+});
 
 
 async function runAnalysis(event) {
