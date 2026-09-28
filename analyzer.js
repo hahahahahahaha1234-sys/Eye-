@@ -17,16 +17,21 @@ class EyeAnalyzer {
                 outer: 33,
                 inner: 133,
                 top: 159,
-                bottom: 145
+                bottom: 145,
+                contour: [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246]
             },
-
             right: {
                 outer: 263,
                 inner: 362,
                 top: 386,
-                bottom: 374
+                bottom: 374,
+                contour: [263, 249, 390, 373, 374, 380, 381, 382, 362, 398, 384, 385, 386, 387, 388, 466]
             }
         };
+
+        this.smoothedLandmarks = null;
+        this.processing = false;
+        this.frozenFrame = null;
 
         this.irisIndices = {
             left: [468, 469, 470, 471, 472],
@@ -69,14 +74,16 @@ class EyeAnalyzer {
 
 
     async processFrame() {
-
-        if (!this.ready) {
+        if (!this.ready || this.processing || this.video.paused || this.video.ended) {
             return;
         }
 
-        await this.faceMesh.send({
-            image: this.video
-        });
+        this.processing = true;
+        try {
+            await this.faceMesh.send({ image: this.video });
+        } finally {
+            this.processing = false;
+        }
     }
 
 
@@ -101,10 +108,23 @@ class EyeAnalyzer {
             return;
         }
 
-        const landmarks =
-            results.multiFaceLandmarks[0];
+        const rawLandmarks = results.multiFaceLandmarks[0];
 
-        this.drawFace(landmarks);
+        if (!this.smoothedLandmarks || this.smoothedLandmarks.length !== rawLandmarks.length) {
+            this.smoothedLandmarks = rawLandmarks.map(point => ({ ...point }));
+        } else {
+            const alpha = 0.38;
+            this.smoothedLandmarks = rawLandmarks.map((point, index) => {
+                const previous = this.smoothedLandmarks[index] || point;
+                return {
+                    x: previous.x + (point.x - previous.x) * alpha,
+                    y: previous.y + (point.y - previous.y) * alpha,
+                    z: previous.z + (point.z - previous.z) * alpha
+                };
+            });
+        }
+
+        const landmarks = this.smoothedLandmarks;
         this.drawEyeRegions(landmarks);
     }
 
@@ -146,161 +166,75 @@ class EyeAnalyzer {
 
 
     drawEyeRegions(landmarks) {
+        [this.eyeIndices.left, this.eyeIndices.right].forEach(eye => {
+            const contour = eye.contour.map(id => landmarks[id]).filter(Boolean);
+            if (!contour.length) return;
 
-        const eyes = [
-            this.eyeIndices.left,
-            this.eyeIndices.right
-        ];
-
-        eyes.forEach((eye) => {
-
-            const points = [
-                landmarks[eye.outer],
-                landmarks[eye.inner],
-                landmarks[eye.top],
-                landmarks[eye.bottom]
-            ];
-
-            points.forEach(point => {
-
-                const x =
-                    point.x * this.canvas.width;
-
-                const y =
-                    point.y * this.canvas.height;
-
-                this.ctx.beginPath();
-
-                this.ctx.arc(
-                    x,
-                    y,
-                    3,
-                    0,
-                    Math.PI * 2
-                );
-
-                this.ctx.fillStyle = "#00eaff";
-
-                this.ctx.fill();
+            this.ctx.beginPath();
+            contour.forEach((point, index) => {
+                const x = point.x * this.canvas.width;
+                const y = point.y * this.canvas.height;
+                if (index === 0) this.ctx.moveTo(x, y);
+                else this.ctx.lineTo(x, y);
             });
-
-            const box =
-                this.getEyeBoundingBox(
-                    landmarks,
-                    eye
-                );
-
-            this.ctx.strokeStyle =
-                "#00eaff";
-
+            this.ctx.closePath();
+            this.ctx.strokeStyle = "#00eaff";
             this.ctx.lineWidth = 2;
+            this.ctx.stroke();
 
-            this.ctx.strokeRect(
-                box.x,
-                box.y,
-                box.width,
-                box.height
-            );
+            const box = this.getEyeBoundingBox(landmarks, eye);
+            this.ctx.strokeStyle = "rgba(0,234,255,.78)";
+            this.ctx.lineWidth = 1.5;
+            this.ctx.strokeRect(box.x, box.y, box.width, box.height);
         });
     }
 
 
     getEyeBoundingBox(landmarks, eye) {
-
-        const ids = [
-            eye.outer,
-            eye.inner,
-            eye.top,
-            eye.bottom
-        ];
-
-        const points = ids.map(
-            id => landmarks[id]
-        );
-
-        const xs =
-            points.map(p => p.x);
-
-        const ys =
-            points.map(p => p.y);
+        const points = eye.contour.map(id => landmarks[id]).filter(Boolean);
+        const xs = points.map(p => p.x);
+        const ys = points.map(p => p.y);
 
         const minX = Math.min(...xs);
         const maxX = Math.max(...xs);
-
         const minY = Math.min(...ys);
         const maxY = Math.max(...ys);
 
-        const paddingX =
-            (maxX - minX) * 0.35;
-
-        const paddingY =
-            (maxY - minY) * 0.6;
+        const eyeWidth = maxX - minX;
+        const eyeHeight = maxY - minY;
+        const paddingX = eyeWidth * 0.10;
+        const paddingY = Math.max(eyeHeight * 0.18, eyeWidth * 0.035);
 
         return {
-
-            x:
-                (minX - paddingX)
-                * this.canvas.width,
-
-            y:
-                (minY - paddingY)
-                * this.canvas.height,
-
-            width:
-                (maxX - minX + paddingX * 2)
-                * this.canvas.width,
-
-            height:
-                (maxY - minY + paddingY * 2)
-                * this.canvas.height
+            x: Math.max(0, minX - paddingX) * this.canvas.width,
+            y: Math.max(0, minY - paddingY) * this.canvas.height,
+            width: Math.min(1, eyeWidth + paddingX * 2) * this.canvas.width,
+            height: Math.min(1, eyeHeight + paddingY * 2) * this.canvas.height
         };
     }
 
 
     getNormalizedEyeBox(landmarks, eye) {
+        const points = eye.contour.map(id => landmarks[id]).filter(Boolean);
+        const xs = points.map(p => p.x);
+        const ys = points.map(p => p.y);
 
-        const ids = [
-            eye.outer,
-            eye.inner,
-            eye.top,
-            eye.bottom
-        ];
+        const rawMinX = Math.min(...xs);
+        const rawMaxX = Math.max(...xs);
+        const rawMinY = Math.min(...ys);
+        const rawMaxY = Math.max(...ys);
+        const width = rawMaxX - rawMinX;
+        const height = rawMaxY - rawMinY;
 
-        const points =
-            ids.map(id => landmarks[id]);
+        const padX = width * 0.12;
+        const padY = Math.max(height * 0.22, width * 0.04);
 
-        const xs =
-            points.map(p => p.x);
+        const minX = Math.max(0, rawMinX - padX);
+        const maxX = Math.min(1, rawMaxX + padX);
+        const minY = Math.max(0, rawMinY - padY);
+        const maxY = Math.min(1, rawMaxY + padY);
 
-        const ys =
-            points.map(p => p.y);
-
-        const minX = Math.max(
-            0,
-            Math.min(...xs) - 0.035
-        );
-
-        const maxX = Math.min(
-            1,
-            Math.max(...xs) + 0.035
-        );
-
-        const minY = Math.max(
-            0,
-            Math.min(...ys) - 0.045
-        );
-
-        const maxY = Math.min(
-            1,
-            Math.max(...ys) + 0.045
-        );
-
-        return {
-            x: minX,
-            y: minY,
-            width: maxX - minX,
-            height: maxY - minY
-        };
+        return { x:minX, y:minY, width:maxX-minX, height:maxY-minY };
     }
 
 
@@ -473,11 +407,11 @@ class EyeAnalyzer {
             canvas.getContext("2d");
 
         ctx.drawImage(
-            this.video,
-            box.x * this.video.videoWidth,
-            box.y * this.video.videoHeight,
-            box.width * this.video.videoWidth,
-            box.height * this.video.videoHeight,
+            this.getSourceImage(),
+            box.x * (this.frozenFrame?.width || this.video.videoWidth),
+            box.y * (this.frozenFrame?.height || this.video.videoHeight),
+            box.width * (this.frozenFrame?.width || this.video.videoWidth),
+            box.height * (this.frozenFrame?.height || this.video.videoHeight),
             0,
             0,
             canvas.width,
@@ -529,11 +463,11 @@ class EyeAnalyzer {
             canvas.getContext("2d");
 
         ctx.drawImage(
-            this.video,
-            box.x * this.video.videoWidth,
-            box.y * this.video.videoHeight,
-            box.width * this.video.videoWidth,
-            box.height * this.video.videoHeight,
+            this.getSourceImage(),
+            box.x * (this.frozenFrame?.width || this.video.videoWidth),
+            box.y * (this.frozenFrame?.height || this.video.videoHeight),
+            box.width * (this.frozenFrame?.width || this.video.videoWidth),
+            box.height * (this.frozenFrame?.height || this.video.videoHeight),
             0,
             0,
             canvas.width,
@@ -593,11 +527,11 @@ class EyeAnalyzer {
         const ctx = canvas.getContext("2d");
 
         ctx.drawImage(
-            this.video,
-            box.x * this.video.videoWidth,
-            box.y * this.video.videoHeight,
-            box.width * this.video.videoWidth,
-            box.height * this.video.videoHeight,
+            this.getSourceImage(),
+            box.x * (this.frozenFrame?.width || this.video.videoWidth),
+            box.y * (this.frozenFrame?.height || this.video.videoHeight),
+            box.width * (this.frozenFrame?.width || this.video.videoWidth),
+            box.height * (this.frozenFrame?.height || this.video.videoHeight),
             0,
             0,
             canvas.width,
@@ -709,6 +643,23 @@ class EyeAnalyzer {
     }
 
 
+    freezeFrame() {
+        const width = this.video.videoWidth;
+        const height = this.video.videoHeight;
+        if (!width || !height) throw new Error("相機影像尚未準備完成");
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(this.video, 0, 0, width, height);
+        this.frozenFrame = canvas;
+        return canvas;
+    }
+
+    getSourceImage() {
+        return this.frozenFrame || this.video;
+    }
+
     getAnalysisReport() {
 
         if (!this.latestResults || !this.latestResults.multiFaceLandmarks || !this.latestResults.multiFaceLandmarks.length) {
@@ -720,7 +671,7 @@ class EyeAnalyzer {
             };
         }
 
-        const landmarks = this.latestResults.multiFaceLandmarks[0];
+        const landmarks = this.smoothedLandmarks || this.latestResults.multiFaceLandmarks[0];
 
         const leftBox = this.getNormalizedEyeBox(
             landmarks,
@@ -835,27 +786,16 @@ class EyeAnalyzer {
     }
 
     captureImage() {
-
-        const canvas =
-            document.createElement("canvas");
-
-        canvas.width =
-            this.video.videoWidth;
-
-        canvas.height =
-            this.video.videoHeight;
-
-        const ctx =
-            canvas.getContext("2d");
-
-        ctx.drawImage(
-            this.video,
-            0,
-            0,
-            canvas.width,
-            canvas.height
-        );
-
+        const source = this.frozenFrame || this.freezeFrame();
+        const canvas = document.createElement("canvas");
+        canvas.width = source.width || this.video.videoWidth;
+        canvas.height = source.height || this.video.videoHeight;
+        canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
         return canvas;
     }
+
+    releaseFrozenFrame() {
+        this.frozenFrame = null;
+    }
+
 }
