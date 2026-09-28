@@ -876,44 +876,6 @@ async function runAnalysis(event) {
    Loading
 ========================= */
 
-function updateLoading(
-    title,
-    text,
-    progress
-) {
-
-    document
-        .getElementById(
-            "loading-title"
-        )
-        .textContent = title;
-
-    document
-        .getElementById(
-            "loading-text"
-        )
-        .textContent = text;
-
-    document
-        .getElementById(
-            "progress-fill"
-        )
-        .style.width =
-            `${progress}%`;
-}
-
-
-function delay(ms) {
-
-    return new Promise(
-        resolve => setTimeout(
-            resolve,
-            ms
-        )
-    );
-}
-
-
 /* =========================
    結果
 ========================= */
