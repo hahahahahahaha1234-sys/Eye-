@@ -650,6 +650,61 @@ class EyeAnalyzer {
     }
 
 
+    analyzeIrisOptics(landmarks, irisIds) {
+        const source = this.getSourceImage();
+        const sourceWidth = this.frozenFrame?.width || this.video.videoWidth;
+        const sourceHeight = this.frozenFrame?.height || this.video.videoHeight;
+        const points = irisIds.map(id => landmarks[id]).filter(Boolean);
+        if (points.length < 4 || !sourceWidth || !sourceHeight) {
+            return { reliable:false, centerLStar:null, peripheralLStar:null, ringGradient:null };
+        }
+
+        const cx = points.reduce((v,p)=>v+p.x,0) / points.length;
+        const cy = points.reduce((v,p)=>v+p.y,0) / points.length;
+        let radiusN = 0;
+        points.forEach(p => { radiusN = Math.max(radiusN, Math.hypot(p.x-cx, p.y-cy)); });
+        if (!radiusN) return { reliable:false, centerLStar:null, peripheralLStar:null, ringGradient:null };
+
+        const cropRadiusX = radiusN * sourceWidth * 1.75;
+        const cropRadiusY = radiusN * sourceHeight * 1.75;
+        const sx = Math.max(0, cx*sourceWidth-cropRadiusX);
+        const sy = Math.max(0, cy*sourceHeight-cropRadiusY);
+        const sw = Math.min(sourceWidth-sx, cropRadiusX*2);
+        const sh = Math.min(sourceHeight-sy, cropRadiusY*2);
+        if (sw < 8 || sh < 8) return { reliable:false, centerLStar:null, peripheralLStar:null, ringGradient:null };
+
+        const canvas=document.createElement("canvas");
+        canvas.width=180; canvas.height=180;
+        const ctx=canvas.getContext("2d",{willReadFrequently:true});
+        ctx.drawImage(source,sx,sy,sw,sh,0,0,180,180);
+        const data=ctx.getImageData(0,0,180,180).data;
+
+        const center=[], inner=[], outer=[];
+        for(let y=0;y<180;y++){
+            for(let x=0;x<180;x++){
+                const dx=(x-90)/90, dy=(y-90)/90;
+                const d=Math.hypot(dx,dy);
+                const i=(y*180+x)*4;
+                const lab=this.rgbToLab(data[i],data[i+1],data[i+2]);
+                if(d<=0.24) center.push(lab.L);
+                else if(d>=0.42 && d<=0.66) inner.push(lab.L);
+                else if(d>=0.72 && d<=0.94) outer.push(lab.L);
+            }
+        }
+        const median=values=>{
+            if(!values.length) return null;
+            const v=[...values].sort((a,b)=>a-b), m=Math.floor(v.length/2);
+            return v.length%2?v[m]:(v[m-1]+v[m])/2;
+        };
+        const c=median(center), i=median(inner), o=median(outer);
+        return {
+            reliable: c!==null && i!==null && o!==null,
+            centerLStar: c===null?null:Number(c.toFixed(2)),
+            peripheralLStar: o===null?null:Number(o.toFixed(2)),
+            ringGradient: (i===null||o===null)?null:Number((o-i).toFixed(2))
+        };
+    }
+
     freezeFrame() {
         const width = this.video.videoWidth;
         const height = this.video.videoHeight;
@@ -716,6 +771,23 @@ class EyeAnalyzer {
             this.scleraContours.right,
             this.irisIndices.right
         );
+
+        const leftOptics = this.analyzeIrisOptics(landmarks, this.irisIndices.left);
+        const rightOptics = this.analyzeIrisOptics(landmarks, this.irisIndices.right);
+
+        const opticsSamples = [leftOptics, rightOptics].filter(item => item.reliable);
+        const opticsMean = key => opticsSamples.length
+            ? Number((opticsSamples.reduce((sum,item)=>sum+item[key],0)/opticsSamples.length).toFixed(2))
+            : null;
+
+        const optics = {
+            reliable: opticsSamples.length > 0,
+            pupilCenterLStar: opticsMean("centerLStar"),
+            cornealPeripheralLStar: opticsMean("peripheralLStar"),
+            cornealRingGradient: opticsMean("ringGradient"),
+            left: leftOptics,
+            right: rightOptics
+        };
 
         const scleraSamples = [leftSclera, rightSclera].filter(
             item => item.reliable && item.validPixels >= 80
@@ -784,7 +856,8 @@ class EyeAnalyzer {
                 aStar: sclera.aStar,
                 bStar: sclera.bStar,
                 redRatio: sclera.redRatio,
-                sclera
+                sclera,
+                optics
             },
             geometry: {
                 leftEyeWidth: Number(leftBox.width.toFixed(4)),
