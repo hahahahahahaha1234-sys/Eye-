@@ -746,7 +746,8 @@ async function runAnalysis() {
 
     if (
         !analyzer.latestResults ||
-        !analyzer.latestResults.multiFaceLandmarks
+        !analyzer.latestResults.multiFaceLandmarks ||
+        !analyzer.latestResults.multiFaceLandmarks.length
     ) {
 
         alert(
@@ -756,6 +757,23 @@ async function runAnalysis() {
         return;
     }
 
+    /*
+     * 使用者按下「開始特徵分析」的瞬間就鎖定影像。
+     * 先 pause，讓後續 ROI / 色彩特徵與送往 API 的照片
+     * 都來自同一個定格畫面，避免分析期間人物移動造成前後不一致。
+     */
+    video.pause();
+
+    const captureButton =
+        document.getElementById("capture-btn");
+
+    captureButton.disabled = true;
+
+    const imageCanvas =
+        analyzer.captureImage();
+
+    const features =
+        analyzer.getAnalysisReport();
 
     showSection(
         "loading-section"
@@ -763,8 +781,8 @@ async function runAnalysis() {
 
 
     updateLoading(
-        "正在分析影像",
-        "正在取得眼部 ROI……",
+        "影像已定格",
+        "已拍攝目前畫面，正在取得眼部 ROI……",
         20
     );
 
@@ -772,22 +790,14 @@ async function runAnalysis() {
     await delay(300);
 
 
-    const features =
-        analyzer.getAnalysisReport();
-
-
     updateLoading(
         "色彩分析",
-        "正在計算 RGB / HSV / CIE L*a*b*……",
+        "正在分析剛才拍攝的影像：RGB / HSV / CIE L*a*b*……",
         45
     );
 
 
     await delay(300);
-
-
-    const imageCanvas =
-        analyzer.captureImage();
 
 
     const image =
@@ -903,6 +913,14 @@ async function runAnalysis() {
         showSection(
             "scan-section"
         );
+
+        try {
+            await video.play();
+        } catch (resumeError) {
+            console.warn("無法恢復相機預覽：", resumeError);
+        }
+
+        document.getElementById("capture-btn").disabled = false;
 
         alert(
             "分析失敗：" +
