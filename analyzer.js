@@ -807,6 +807,71 @@ class EyeAnalyzer {
         return canvas;
     }
 
+    captureVisibleFrame(sourceCanvas = null) {
+        const source = sourceCanvas || this.frozenFrame || this.freezeFrame();
+        const wrapper = this.video.closest(".camera-wrapper");
+        const displayW = wrapper?.clientWidth || this.video.clientWidth || source.width;
+        const displayH = wrapper?.clientHeight || this.video.clientHeight || source.height;
+
+        // CSS uses object-fit: cover. Reproduce exactly the portion the user saw.
+        const sourceRatio = source.width / source.height;
+        const displayRatio = displayW / displayH;
+        let sx = 0, sy = 0, sw = source.width, sh = source.height;
+
+        if (sourceRatio > displayRatio) {
+            sw = source.height * displayRatio;
+            sx = (source.width - sw) / 2;
+        } else if (sourceRatio < displayRatio) {
+            sh = source.width / displayRatio;
+            sy = (source.height - sh) / 2;
+        }
+
+        const out = document.createElement("canvas");
+        out.width = Math.max(1, Math.round(sw));
+        out.height = Math.max(1, Math.round(sh));
+        out.getContext("2d").drawImage(source, sx, sy, sw, sh, 0, 0, out.width, out.height);
+        return out;
+    }
+
+    captureEyeCloseup(sourceCanvas = null) {
+        const source = sourceCanvas || this.frozenFrame || this.freezeFrame();
+        const landmarks = this.smoothedLandmarks || this.latestResults?.multiFaceLandmarks?.[0];
+        if (!landmarks) return null;
+
+        const ids = [
+            ...this.eyeIndices.left.contour,
+            ...this.eyeIndices.right.contour,
+            ...this.irisIndices.left,
+            ...this.irisIndices.right
+        ];
+        const pts = ids.map(id => landmarks[id]).filter(Boolean);
+        if (!pts.length) return null;
+
+        let minX = Math.min(...pts.map(p => p.x));
+        let maxX = Math.max(...pts.map(p => p.x));
+        let minY = Math.min(...pts.map(p => p.y));
+        let maxY = Math.max(...pts.map(p => p.y));
+
+        const eyeSpan = maxX - minX;
+        const eyeHeight = maxY - minY;
+        // Include eyelids above/below so stye morphology is not cropped away.
+        minX = Math.max(0, minX - eyeSpan * 0.16);
+        maxX = Math.min(1, maxX + eyeSpan * 0.16);
+        minY = Math.max(0, minY - Math.max(eyeHeight * 1.35, eyeSpan * 0.10));
+        maxY = Math.min(1, maxY + Math.max(eyeHeight * 1.35, eyeSpan * 0.10));
+
+        const sx = minX * source.width;
+        const sy = minY * source.height;
+        const sw = (maxX - minX) * source.width;
+        const sh = (maxY - minY) * source.height;
+
+        const out = document.createElement("canvas");
+        out.width = Math.max(1, Math.round(sw));
+        out.height = Math.max(1, Math.round(sh));
+        out.getContext("2d").drawImage(source, sx, sy, sw, sh, 0, 0, out.width, out.height);
+        return out;
+    }
+
     releaseFrozenFrame() {
         this.frozenFrame = null;
     }
