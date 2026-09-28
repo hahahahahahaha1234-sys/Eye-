@@ -261,6 +261,10 @@ ${JSON.stringify(
 - 若資料不足，應說明無法可靠判讀。
 - 建議以進一步專業醫療評估為主。
 - 不得自行創造不存在的檢測數值。
+- 系統提供的 flags 與 color.sclera 是優先的影像分析結果。
+- 若 color.sclera.bStar > 12.0 或 flags.yellow === true，不得回傳「低風險」，finding 必須提到黃色色彩特徵。
+- 若 color.sclera.aStar > 42.0 或 flags.red === true，不得忽略紅色色彩特徵。
+- 風險分級只是本作品的初篩提示，不代表醫療診斷。
 
 請只回傳 JSON：
 
@@ -549,12 +553,45 @@ const server =
                     }
 
 
+                    const features = payload.features || {};
+
                     const result =
                         await analyzeWithGemini(
                             payload.image,
-                            payload.features || {}
+                            features
                         );
 
+                    const sclera = features.color?.sclera || {};
+                    const yellowFlag =
+                        features.flags?.yellow === true ||
+                        Number(sclera.bStar) > 12.0;
+                    const redFlag =
+                        features.flags?.red === true ||
+                        Number(sclera.aStar) > 42.0;
+
+                    if (yellowFlag) {
+
+                        if (result.level === "低風險") {
+                            result.level = redFlag ? "高風險" : "中風險";
+                        }
+
+                        if (!result.finding || !result.finding.includes("黃色")) {
+                            result.finding =
+                                "鞏膜區域出現較明顯的黃色色彩特徵。" +
+                                (result.finding ? result.finding : "");
+                        }
+
+                        if (!result.desc || result.desc === "影像分析完成。") {
+                            result.desc =
+                                "系統在鞏膜區域觀察到計畫書設定的黃色影像提示條件；此結果僅代表影像特徵，不能單獨用來確診黃疸。";
+                        }
+                    }
+
+                    if (redFlag && (!result.finding || !result.finding.includes("紅色"))) {
+                        result.finding =
+                            "眼部區域出現較明顯的紅色色彩特徵。" +
+                            (result.finding ? result.finding : "");
+                    }
 
                     return sendJson(
                         res,
