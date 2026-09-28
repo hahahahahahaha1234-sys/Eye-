@@ -847,3 +847,23 @@ button, input, textarea, select {
     animation: analysisSpin .8s linear infinite;
 }
 @keyframes analysisSpin { to { transform: rotate(360deg); } }
+
+
+/* Mobile Safari interaction fix — no visual/layout changes */
+#scan-section .camera-wrapper video,
+#scan-section #overlay-canvas,
+#scan-section .hud-corner,
+#scan-section .face-guide,
+#scan-section .scan-message {
+    pointer-events: none !important;
+}
+
+#scan-section #capture-btn {
+    position: relative;
+    z-index: 50;
+    pointer-events: auto !important;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: rgba(0, 234, 255, 0.18);
+}
