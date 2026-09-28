@@ -625,6 +625,7 @@ async function startCamera() {
 
         await video.play();
 
+        overlayCanvas.style.visibility = "visible";
 
         await analyzer.init();
 
@@ -744,175 +745,97 @@ document
 
 async function runAnalysis() {
 
+    const captureButton = document.getElementById("capture-btn");
+    const modal = document.getElementById("analysis-modal");
+    const modalText = document.getElementById("analysis-modal-text");
+
+    if (captureButton.disabled) return;
+
     if (
         !analyzer.latestResults ||
         !analyzer.latestResults.multiFaceLandmarks ||
         !analyzer.latestResults.multiFaceLandmarks.length
     ) {
-
-        alert(
-            "尚未偵測到眼部，請重新調整位置。"
-        );
-
+        alert("尚未偵測到眼部，請重新調整位置。");
         return;
     }
 
-    /*
-     * 使用者按下「開始特徵分析」的瞬間就鎖定影像。
-     * 先 pause，讓後續 ROI / 色彩特徵與送往 API 的照片
-     * 都來自同一個定格畫面，避免分析期間人物移動造成前後不一致。
-     */
-    video.pause();
-
-    const captureButton =
-        document.getElementById("capture-btn");
-
+    // First action: lock the UI and show feedback immediately.
     captureButton.disabled = true;
+    modal.classList.add("open");
+    modalText.textContent = "正在擷取目前影像……";
 
-    const imageCanvas =
-        analyzer.captureImage();
-
-    const features =
-        analyzer.getAnalysisReport();
-
-    showSection(
-        "loading-section"
+    // Give the browser one paint cycle so the click never looks unresponsive.
+    await new Promise(resolve =>
+        requestAnimationFrame(() =>
+            requestAnimationFrame(resolve)
+        )
     );
-
-
-    updateLoading(
-        "影像已定格",
-        "已拍攝目前畫面，正在取得眼部 ROI……",
-        20
-    );
-
-
-    await delay(300);
-
-
-    updateLoading(
-        "色彩分析",
-        "正在分析剛才拍攝的影像：RGB / HSV / CIE L*a*b*……",
-        45
-    );
-
-
-    await delay(300);
-
-
-    const image =
-        imageCanvas
-            .toDataURL(
-                "image/jpeg",
-                0.78
-            )
-            .split(",")[1];
-
-
-    updateLoading(
-        "AI 分析",
-        "正在建立初篩報告……",
-        70
-    );
-
 
     try {
+        // Capture the exact current frame BEFORE any asynchronous analysis.
+        const imageCanvas = analyzer.captureImage();
 
-        const response =
-            await fetch(
-                "/api/analyze",
-                {
+        // Freeze the visible preview. Pausing alone can still leave MediaPipe's
+        // overlay updating, so stop drawing/processing by pausing and clearing overlay.
+        video.pause();
+        overlayCanvas.style.visibility = "hidden";
 
-                    method: "POST",
+        modalText.textContent = "影像已定格，正在擷取眼部特徵……";
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+        const features = analyzer.getAnalysisReport();
 
-                    body: JSON.stringify({
+        const image = imageCanvas
+            .toDataURL("image/jpeg", 0.78)
+            .split(",")[1];
 
-                        image,
+        modalText.textContent = "特徵分析中，請稍等……";
 
-                        features
+        const response = await fetch("/api/analyze", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                image,
+                features
+            })
+        });
 
-                    })
-                }
-            );
-
-
-        /*
-         * 先讀取文字，再解析 JSON。
-         * 避免伺服器回傳空內容時直接觸發
-         * "Unexpected end of JSON input"。
-         */
-        const rawText =
-            await response.text();
-
+        const rawText = await response.text();
         let data = {};
 
         if (rawText.trim()) {
-
             try {
-
-                data =
-                    JSON.parse(rawText);
-
+                data = JSON.parse(rawText);
             } catch (parseError) {
-
-                console.error(
-                    "伺服器回傳不是有效 JSON：",
-                    rawText
-                );
-
-                throw new Error(
-                    `伺服器回傳格式錯誤（HTTP ${response.status}）`
-                );
+                console.error("伺服器回傳不是有效 JSON：", rawText);
+                throw new Error(`伺服器回傳格式錯誤（HTTP ${response.status}）`);
             }
         }
 
-
         if (!response.ok) {
-
             throw new Error(
                 data.error ||
                 `分析服務發生錯誤（HTTP ${response.status}）`
             );
         }
 
-
         if (!data || typeof data !== "object") {
-
-            throw new Error(
-                "分析服務沒有回傳有效結果"
-            );
+            throw new Error("分析服務沒有回傳有效結果");
         }
 
+        modalText.textContent = "分析完成，正在建立結果……";
+        await delay(180);
 
-        updateLoading(
-            "完成",
-            "正在建立結果頁面……",
-            100
-        );
-
-
-        await delay(500);
-
-
-        displayResult(
-            data,
-            features,
-            imageCanvas
-        );
-
+        modal.classList.remove("open");
+        displayResult(data, features, imageCanvas);
 
     } catch (error) {
-
         console.error(error);
 
-        showSection(
-            "scan-section"
-        );
+        modal.classList.remove("open");
+        overlayCanvas.style.visibility = "visible";
 
         try {
             await video.play();
@@ -920,12 +843,10 @@ async function runAnalysis() {
             console.warn("無法恢復相機預覽：", resumeError);
         }
 
-        document.getElementById("capture-btn").disabled = false;
+        captureButton.disabled = false;
+        showSection("scan-section");
 
-        alert(
-            "分析失敗：" +
-            error.message
-        );
+        alert("分析失敗：" + error.message);
     }
 }
 
