@@ -257,6 +257,19 @@ ${JSON.stringify(
    CIE L*a*b* 的 a* > 42.0
    可作為結膜紅色程度的提示條件。
 
+3. 白內障：
+   計畫書指定分析「瞳孔中央／晶狀體區域」的 L* 亮度與混濁外觀。
+   系統 color.optics.pupilCenterLStar 是此區域的量化輔助特徵。
+   計畫書沒有提供白內障 L* 的固定陽性門檻，因此不得自行捏造數值門檻；必須結合眼部近照的灰白/混濁外觀判讀。
+
+4. 角膜老年環：
+   計畫書指定分析「角膜周邊」L* 與灰度/亮度梯度。
+   系統 color.optics.cornealPeripheralLStar 與 cornealRingGradient 是量化輔助特徵。
+   計畫書沒有提供固定陽性門檻，因此不得自行捏造數值門檻；必須結合眼部近照是否有角膜周邊灰白/藍白環狀外觀判讀。
+
+5. 針眼：
+   計畫書描述眼瞼邊緣紅腫、按壓疼痛、局部突起。照片只能檢查可見的紅腫/隆起/膿點樣外觀，不能從照片判斷疼痛。
+
 你要主動檢查下列「疑似外觀特徵」：
 1. 疑似針眼/麥粒腫外觀：上或下眼瞼邊緣是否有局部、偏單側的紅腫、隆起、小腫塊或膿點樣外觀。
 2. 疑似結膜炎相關外觀：眼白/結膜是否呈較廣泛紅色。
@@ -741,6 +754,43 @@ const server =
                             "眼部區域出現較明顯的紅色色彩特徵。" +
                             (result.finding ? result.finding : "");
                     }
+
+                    // Final consistency pass: the structured five-condition result is
+                    // the source of truth for what the UI reports.
+                    const labels = {
+                        jaundice: "疑似黃色鞏膜／黃疸相關影像特徵",
+                        conjunctivitis: "疑似急性結膜炎相關紅眼特徵",
+                        stye: "疑似針眼／麥粒腫相關外觀特徵",
+                        cataract: "疑似白內障樣混濁特徵",
+                        arcus: "疑似角膜老年環特徵"
+                    };
+
+                    const detectedKeys = Object.keys(labels).filter(
+                        key => result.screening?.[key]?.status === "detected"
+                    );
+                    const uncertainKeys = Object.keys(labels).filter(
+                        key => result.screening?.[key]?.status === "uncertain"
+                    );
+
+                    if (detectedKeys.length) {
+                        result.finding = detectedKeys.map(key => labels[key]).join("；") + "。";
+                        if (result.level === "低風險") result.level = "中風險";
+                    } else if (uncertainKeys.length) {
+                        result.finding = "部分項目影像不足，無法可靠判讀：" +
+                            uncertainKeys.map(key => labels[key].replace("疑似","")).join("、") + "。";
+                        if (result.level === "低風險") result.level = "中風險";
+                    } else {
+                        result.finding = "本次五項影像初篩未見明顯疑似特徵。";
+                    }
+
+                    result.pipeline = {
+                        geminiCompleted: true,
+                        visibleFrameReceived: Boolean(payload.image),
+                        eyeCloseupReceived: Boolean(payload.eyeCloseup),
+                        featuresReceived: Boolean(payload.features),
+                        scleraReliable,
+                        planVersion: "作品計畫書第6–8頁"
+                    };
 
                     return sendJson(
                         res,
