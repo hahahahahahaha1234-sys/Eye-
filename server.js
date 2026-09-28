@@ -262,7 +262,9 @@ ${JSON.stringify(
 - 建議以進一步專業醫療評估為主。
 - 不得自行創造不存在的檢測數值。
 - 系統提供的 flags 與 color.sclera 是優先的影像分析結果。
-- 若 color.sclera.bStar > 12.0 或 flags.yellow === true，不得回傳「低風險」，finding 必須提到黃色色彩特徵。
+- color.sclera 現在只分析 MediaPipe 眼瞼輪廓內、排除虹膜/瞳孔後的有效眼白像素，不可用整張臉或皮膚顏色代替。
+- 若 color.sclera.reliable === false，必須明確說「眼白有效像素不足，無法可靠判讀」，不得因照片整體偏黃就推論黃色鞏膜。
+- 若 color.sclera.reliable === true 且（color.sclera.bStar > 12.0 或 flags.yellow === true），不得回傳「低風險」，finding 必須提到「疑似黃色鞏膜影像特徵」。
 - 若 color.sclera.aStar > 42.0 或 flags.red === true，不得忽略紅色色彩特徵。
 - 風險分級只是本作品的初篩提示，不代表醫療診斷。
 
@@ -562,12 +564,26 @@ const server =
                         );
 
                     const sclera = features.color?.sclera || {};
+                    const scleraReliable = sclera.reliable === true;
                     const yellowFlag =
-                        features.flags?.yellow === true ||
-                        Number(sclera.bStar) > 12.0;
+                        scleraReliable && (
+                            features.flags?.yellow === true ||
+                            Number(sclera.bStar) > 12.0 ||
+                            Number(sclera.yellowRatio) >= 12
+                        );
                     const redFlag =
-                        features.flags?.red === true ||
-                        Number(sclera.aStar) > 42.0;
+                        scleraReliable && (
+                            features.flags?.red === true ||
+                            Number(sclera.aStar) > 42.0 ||
+                            Number(sclera.redRatio) >= 12
+                        );
+
+                    if (!scleraReliable) {
+                        result.level = result.level === "高風險" ? "高風險" : "中風險";
+                        result.finding = "眼白有效像素不足，這張影像無法可靠判讀黃色鞏膜特徵。";
+                        result.desc = "系統沒有取得足夠且可用的鞏膜（眼白）像素，因此不以整張臉、皮膚或環境色偏推論黃疸相關影像特徵。";
+                        result.advice = "請在均勻光線下重新拍攝，雙眼睜開並直視鏡頭；本系統僅供影像初篩，若本人出現眼白或皮膚明顯變黃等情況，請接受專業醫療評估。";
+                    }
 
                     if (yellowFlag) {
 
