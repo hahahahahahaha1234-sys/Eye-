@@ -215,7 +215,8 @@ function readBody(req) {
 
 async function analyzeWithGemini(
     image,
-    features
+    features,
+    eyeCloseup = null
 ) {
 
     if (!GEMINI_API_KEY) {
@@ -328,14 +329,22 @@ level 只能是：
 
                     {
                         inline_data: {
-
-                            mime_type:
-                                "image/jpeg",
-
-                            data:
-                                image
+                            mime_type: "image/jpeg",
+                            data: image
                         }
-                    }
+                    },
+
+                    ...(eyeCloseup ? [
+                        {
+                            text: "以下第二張影像是由 MediaPipe 依雙眼 landmarks 自動裁切的眼睛與眼瞼近照。針眼/麥粒腫、白內障樣混濁、角膜老年環與結膜紅的形態判讀，請優先仔細檢查這張近照；第一張影像則用於整體脈絡。"
+                        },
+                        {
+                            inline_data: {
+                                mime_type: "image/jpeg",
+                                data: eyeCloseup
+                            }
+                        }
+                    ] : [])
 
                 ]
 
