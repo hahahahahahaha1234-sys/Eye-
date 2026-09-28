@@ -1,52 +1,849 @@
-@import url("https://raw.githubusercontent.com/hahahahahahaha1234-sys/Eye-/f0a94fd9fe55059de1562a48c6e0e2feaa16450a/style.css");
+/*
+ * Base design is kept pinned to the previous stable stylesheet.
+ * The rules below are the responsive/layout overrides for the current UI.
+ */
+@import url("https://raw.githubusercontent.com/hahahahahahaha1234-sys/Eye-/48e29f93a9f640a54347e1f7737f3fb7ab263544/style.css");
 
-/* Mobile scan hotfix: remove the duplicated FACE guide / message area shown below the action. */
-#scan-section .face-guide,
-#scan-section .hud-corner,
-#scan-section .scan-message {
-    display: none !important;
+#scan-section {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    padding: clamp(28px, 5vw, 56px) 20px 110px;
 }
 
-/* Keep the scan screen compact: camera -> status -> action -> note. */
-#scan-section {
-    padding-bottom: max(88px, calc(72px + env(safe-area-inset-bottom))) !important;
+#scan-section .scan-header,
+#scan-section .camera-wrapper,
+#scan-section .scan-info {
+    width: min(1100px, 100%);
+    flex-shrink: 0;
+}
+
+#scan-section .scan-header {
+    margin-bottom: 24px;
 }
 
 #scan-section .camera-wrapper {
-    position: relative !important;
-    overflow: hidden !important;
+    width: min(1100px, 100%);
+    aspect-ratio: 16 / 9;
+    min-height: 420px;
+}
+
+#scan-section .camera-wrapper video,
+#scan-section .camera-wrapper canvas {
+    width: 100%;
+    height: 100%;
+}
+
+#scan-section .scan-info {
+    margin: 18px 0 22px;
 }
 
 #scan-section #capture-btn {
-    position: relative !important;
-    z-index: 50 !important;
-    pointer-events: auto !important;
-    touch-action: manipulation !important;
-    -webkit-tap-highlight-color: rgba(0,234,255,.18);
+    min-width: min(360px, 100%);
 }
 
-#scan-section .medical-note {
-    margin-bottom: 0 !important;
+#help-btn,
+.help-button,
+#help-center-btn {
+    z-index: 1000;
+}
+
+/* Keep the original deep-blue / cyan sci-fi visual language. */
+#scan-section {
+    background:
+        radial-gradient(circle at 50% 0%, rgba(0, 150, 255, 0.13), transparent 48%),
+        linear-gradient(rgba(0, 220, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 220, 255, 0.045) 1px, transparent 1px),
+        #02070d;
+    background-size: auto, 40px 40px, 40px 40px, auto;
+    color: #eafaff;
+}
+
+#scan-section .camera-wrapper {
+    border: 1px solid rgba(0, 220, 255, 0.32);
+    box-shadow: 0 0 50px rgba(0, 200, 255, 0.10), inset 0 0 30px rgba(0, 200, 255, 0.04);
+    background: #000;
+}
+
+#scan-section .scan-info .info-item {
+    border-color: rgba(0, 220, 255, 0.22);
+    background: rgba(7, 18, 28, 0.72);
+}
+
+#scan-section .scan-header h2,
+#scan-section .section-label,
+#scan-section .info-item strong,
+#scan-section .face-guide span {
+    color: #00eaff;
+}
+
+#scan-section .status-badge {
+    color: #00eaff;
+    border-color: rgba(0, 220, 255, 0.30);
+    background: rgba(0, 220, 255, 0.035);
+}
+
+/* =========================
+   Unified app shell
+   ========================= */
+
+html,
+body {
+    background: #02070d;
+}
+
+body {
+    color: #eafaff;
+}
+
+.page-section {
+    min-height: 100dvh;
+    background:
+        radial-gradient(circle at 50% 0%, rgba(0, 150, 255, 0.10), transparent 50%),
+        linear-gradient(rgba(0, 220, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 220, 255, 0.035) 1px, transparent 1px),
+        #02070d;
+    background-size: auto, 40px 40px, 40px 40px, auto;
+    color: #eafaff;
+}
+
+.page-section .panel,
+.page-section .result-panel,
+.page-section .loading-panel {
+    background: rgba(4, 13, 22, 0.96);
+    color: #eafaff;
+    border: 1px solid rgba(0, 220, 255, 0.20);
+    box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35), inset 0 0 40px rgba(0, 180, 255, 0.025);
+}
+
+.page-section h1,
+.page-section h2,
+.page-section h3,
+.page-section strong,
+.page-section label,
+.page-section span {
+    color: inherit;
+}
+
+.section-description,
+.medical-note,
+.guide-text,
+.check-item span {
+    color: #8ea7b5;
+}
+
+/* Home = compact app landing / explanation screen. */
+#home-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px 90px;
+}
+
+#home-section .home-content {
+    width: min(980px, 100%);
+}
+
+#home-section .hero {
+    min-height: auto;
+    padding: clamp(28px, 5vw, 58px);
+    border: 1px solid rgba(0, 220, 255, 0.24);
+    background:
+        radial-gradient(circle at 75% 20%, rgba(0, 220, 255, 0.10), transparent 35%),
+        rgba(4, 13, 22, 0.90);
+    box-shadow: 0 0 70px rgba(0, 160, 255, 0.07), inset 0 0 50px rgba(0, 220, 255, 0.025);
+}
+
+#home-section .hero-description {
+    max-width: 760px;
+    color: #9bb0bc;
+}
+
+/* Keep the landing page concise; detailed project explanation remains available through the help center. */
+#home-section .home-block {
+    display: none !important;
+}
+
+#home-section .disease-grid {
+    margin: 28px 0 30px;
+}
+
+#home-section .disease-card {
+    background: rgba(0, 220, 255, 0.025);
+    border-color: rgba(0, 220, 255, 0.18);
+}
+
+#home-section .disease-card:hover {
+    border-color: rgba(0, 234, 255, 0.65);
+    box-shadow: 0 0 28px rgba(0, 220, 255, 0.08);
+}
+
+#home-section #start-btn {
+    min-width: min(360px, 100%);
+    min-height: 56px;
+}
+
+/* Make the existing action read as the first step in the new app flow. */
+#home-section #start-btn {
+    font-size: 0;
+}
+
+#home-section #start-btn::after {
+    content: "開始檢查前問卷  →";
+    font-size: 16px;
+}
+
+/* Questionnaire is the second app screen. */
+#check-section .panel,
+#calibration-section .panel {
+    width: min(760px, 100%);
+    padding: clamp(26px, 5vw, 48px);
+}
+
+#check-section .check-list {
+    margin: 28px 0;
+}
+
+#check-section #continue-check-btn {
+    min-height: 54px;
+    min-width: min(360px, 100%);
+    font-size: 0;
+}
+
+#check-section #continue-check-btn::after {
+    content: "前往拍照頁面  →";
+    font-size: 16px;
+}
+
+/* The old calibration screen becomes the short photo-preparation screen. */
+#calibration-section .panel {
+    text-align: left;
+}
+
+#calibration-section h2 {
+    font-size: 0;
+}
+
+#calibration-section h2::after {
+    content: "拍照前準備";
+    font-size: clamp(30px, 5vw, 44px);
+}
+
+#calibration-section .calibration-guide {
+    margin: 28px 0;
+    padding: 24px;
+    border: 1px solid rgba(0, 220, 255, 0.18);
+    background: rgba(0, 220, 255, 0.025);
+}
+
+#calibration-section #start-camera-btn {
+    width: min(360px, 100%);
+    min-height: 56px;
+}
+
+/* Persistent help icon: always visible at bottom-left. */
+#help-center-btn {
+    position: fixed !important;
+    left: 16px !important;
+    right: auto !important;
+    bottom: max(16px, env(safe-area-inset-bottom)) !important;
+    width: 52px !important;
+    min-width: 52px !important;
+    height: 52px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    display: grid !important;
+    place-items: center !important;
+    font-size: 0 !important;
+    color: #001015 !important;
+    background: #00eaff !important;
+    border: 1px solid rgba(0, 234, 255, 0.85) !important;
+    box-shadow: 0 0 28px rgba(0, 234, 255, 0.24) !important;
+}
+
+#help-center-btn::before {
+    content: "?";
+    font-size: 24px;
+    line-height: 1;
+    font-weight: 800;
+}
+
+#help-center-btn::after {
+    content: "說明";
+    position: absolute;
+    left: 62px;
+    white-space: nowrap;
+    padding: 5px 8px;
+    border: 1px solid rgba(0, 220, 255, 0.18);
+    background: rgba(3, 12, 20, 0.94);
+    color: #8ea7b5;
+    font-size: 11px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s ease;
+}
+
+#help-center-btn:hover::after,
+#help-center-btn:focus-visible::after {
+    opacity: 1;
+}
+
+/* Help modal stays in the same visual system. */
+#help-center-modal {
+    background: rgba(0, 5, 10, 0.82) !important;
+}
+
+.help-modal-panel {
+    background:
+        radial-gradient(circle at 70% 0%, rgba(0, 220, 255, 0.07), transparent 38%),
+        rgba(4, 13, 22, 0.98) !important;
+}
+
+/* Result and analysis pages remain dark and app-like. */
+#loading-section,
+#result-section,
+#history-section {
+    background:
+        radial-gradient(circle at 50% 0%, rgba(0, 150, 255, 0.10), transparent 50%),
+        linear-gradient(rgba(0, 220, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 220, 255, 0.035) 1px, transparent 1px),
+        #02070d;
+    background-size: auto, 40px 40px, 40px 40px, auto;
+}
+
+/* =========================
+   True app-screen navigation
+   =========================
+   Each section is a separate viewport screen. Only the section selected by
+   app.js showSection() is displayed. Scrolling therefore stays inside the
+   current screen and can never reveal the next workflow step underneath it.
+*/
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    margin: 0;
+    overflow: hidden !important;
+    overscroll-behavior: none;
+}
+
+.app {
+    position: relative;
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.page-section {
+    position: absolute !important;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh !important;
+    max-height: 100dvh;
+    margin: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* This must win over any display rule in the original pinned stylesheet. */
+.page-section.hidden {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* The currently selected page is the only visible page. */
+.page-section:not(.hidden) {
+    display: flex !important;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+/* Keep the page background fixed while its own content is allowed to scroll. */
+.page-section::before {
+    pointer-events: none;
 }
 
 @media (max-width: 700px) {
+    .page-section {
+        padding: 24px 12px 96px;
+    }
+
+    #home-section {
+        padding: 16px 10px 96px;
+    }
+
+    #home-section .hero {
+        padding: 26px 18px;
+    }
+
+    #home-section .disease-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    #home-section .disease-card:last-child {
+        grid-column: 1 / -1;
+    }
+
+    #home-section #start-btn,
+    #check-section #continue-check-btn,
+    #calibration-section #start-camera-btn {
+        width: 100%;
+    }
+
+    #check-section .panel,
+    #calibration-section .panel {
+        padding: 26px 18px;
+    }
+
+    #help-center-btn {
+        left: 12px !important;
+        bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    }
+
+    #help-center-btn::after {
+        display: none;
+    }
+
+    /* Mobile keeps the tech-style scan header horizontal instead of crushing CJK text vertically. */
     #scan-section {
-        gap: 0 !important;
-        padding-top: 12px !important;
+        min-height: 100dvh;
+        padding: 22px 12px 110px;
+        overflow-x: hidden;
+        align-items: center;
+    }
+
+    #scan-section .scan-header {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    #scan-section .scan-header > div:first-child {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    #scan-section .scan-header h2 {
+        font-size: clamp(27px, 8vw, 36px);
+        line-height: 1.15;
+        white-space: nowrap;
+        word-break: keep-all;
+        writing-mode: horizontal-tb;
+    }
+
+    #scan-section .section-label {
+        font-size: 10px;
+        letter-spacing: 3px;
+        margin-bottom: 8px;
+    }
+
+    #scan-section .status-badge {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        font-size: 10px;
+        padding: 7px 9px;
     }
 
     #scan-section .camera-wrapper {
-        aspect-ratio: 16 / 7 !important;
-        max-height: 32dvh !important;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        min-height: 0;
+        max-height: none;
+        border: 1px solid rgba(0, 220, 255, 0.36);
+        box-shadow: 0 0 34px rgba(0, 200, 255, 0.12), inset 0 0 22px rgba(0, 200, 255, 0.05);
+    }
+
+    #scan-section .camera-wrapper video {
+        object-fit: cover;
+    }
+
+    #scan-section .face-guide {
+        width: 72%;
+        height: 68%;
+        border-color: rgba(0, 234, 255, 0.55);
+    }
+
+    #scan-section .scan-message {
+        bottom: 14px;
+        max-width: calc(100% - 28px);
+        padding: 8px 10px;
+        font-size: 11px;
+        white-space: normal;
+        text-align: center;
+        background: rgba(0, 7, 13, 0.78);
+        border: 1px solid rgba(0, 220, 255, 0.18);
+        color: #eafaff;
+    }
+
+    #scan-section .hud-corner {
+        width: 24px;
+        height: 24px;
+    }
+
+    #scan-section .top-left,
+    #scan-section .top-right {
+        top: 12px;
+    }
+
+    #scan-section .bottom-left,
+    #scan-section .bottom-right {
+        bottom: 12px;
+    }
+
+    #scan-section .top-left,
+    #scan-section .bottom-left {
+        left: 12px;
+    }
+
+    #scan-section .top-right,
+    #scan-section .bottom-right {
+        right: 12px;
     }
 
     #scan-section .scan-info {
-        margin: 10px 0 14px !important;
+        width: 100%;
+        grid-template-columns: repeat(3, 1fr);
+        margin: 12px 0 16px;
+    }
+
+    #scan-section .info-item {
+        padding: 12px 5px;
+    }
+
+    #scan-section .info-item span {
+        font-size: 9px;
+        letter-spacing: 1px;
+    }
+
+    #scan-section .info-item strong {
+        font-size: 14px;
     }
 
     #scan-section #capture-btn {
-        width: calc(100% - 24px) !important;
-        max-width: 560px !important;
-        min-height: 58px !important;
+        width: min(100%, 360px);
+        min-height: 56px;
+        font-size: 16px;
+        white-space: nowrap;
+        word-break: keep-all;
+        writing-mode: horizontal-tb;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #001015;
+        background: #00eaff;
+        border: 1px solid #00eaff;
+        box-shadow: 0 0 25px rgba(0, 234, 255, 0.18);
+    }
+
+    #scan-section .medical-note {
+        max-width: 360px;
+        text-align: center;
+        margin-top: 12px;
+        color: #637a88;
+    }
+
+    #scan-section #capture-btn:disabled {
+        opacity: 0.38;
     }
 }
+
+@media (max-width: 390px) {
+    #scan-section {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    #scan-section .scan-header h2 {
+        font-size: 25px;
+    }
+
+    #scan-section .camera-wrapper {
+        aspect-ratio: 3 / 2;
+    }
+}
+
+
+/* =========================
+   Responsive layout system
+   2026-09: fluid scaling across phone / tablet / laptop / desktop
+   ========================= */
+
+:root {
+    --page-pad-x: clamp(12px, 3.2vw, 42px);
+    --page-pad-y: clamp(16px, 3.5vh, 48px);
+    --content-max: 1180px;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+img, video, canvas, svg {
+    max-width: 100%;
+}
+
+button, input, textarea, select {
+    max-width: 100%;
+}
+
+.page-section {
+    padding:
+        var(--page-pad-y)
+        var(--page-pad-x)
+        max(88px, calc(var(--page-pad-y) + env(safe-area-inset-bottom)));
+}
+
+.page-section > .panel,
+.page-section > .result-panel,
+.page-section > .loading-panel,
+#home-section .home-content,
+#scan-section .scan-header,
+#scan-section .camera-wrapper,
+#scan-section .scan-info {
+    width: min(var(--content-max), 100%);
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#home-section {
+    align-items: flex-start;
+    padding:
+        clamp(12px, 3vh, 34px)
+        var(--page-pad-x)
+        max(88px, calc(24px + env(safe-area-inset-bottom)));
+}
+
+#home-section .home-content {
+    width: min(1040px, 100%);
+}
+
+#home-section .hero {
+    width: 100%;
+    padding: clamp(22px, 4.5vw, 58px);
+}
+
+#home-section .hero-title {
+    margin: 0;
+    font-size: clamp(40px, 7vw, 82px);
+    line-height: .94;
+    letter-spacing: clamp(-3px, -.25vw, -1px);
+    overflow-wrap: anywhere;
+}
+
+#home-section .hero-title span {
+    display: block;
+}
+
+#home-section .hero-purpose {
+    max-width: 800px;
+    margin: clamp(16px, 2.4vw, 24px) 0 10px;
+    color: #eafaff;
+    font-size: clamp(15px, 1.7vw, 20px);
+    line-height: 1.55;
+    font-weight: 650;
+}
+
+#home-section .hero-description {
+    width: 100%;
+    max-width: 820px;
+    margin-bottom: clamp(18px, 3vw, 30px);
+    font-size: clamp(13px, 1.25vw, 16px);
+    line-height: 1.85;
+}
+
+#home-section .disease-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: clamp(7px, 1.2vw, 14px);
+    width: 100%;
+}
+
+#home-section .disease-card {
+    min-width: 0;
+    padding: clamp(12px, 1.8vw, 20px);
+}
+
+#home-section .disease-card h3,
+#home-section .disease-card p {
+    overflow-wrap: anywhere;
+}
+
+#scan-section .camera-wrapper {
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+}
+
+#scan-section .scan-info {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.result-panel,
+.loading-panel,
+.panel {
+    max-width: min(920px, 100%);
+}
+
+/* Medium laptop / tablet */
+@media (max-width: 900px) {
+    #home-section .disease-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    #home-section .disease-card:nth-child(4),
+    #home-section .disease-card:nth-child(5) {
+        grid-column: auto;
+    }
+
+    #scan-section .camera-wrapper {
+        aspect-ratio: 4 / 3;
+    }
+}
+
+/* Phone / narrow tablet */
+@media (max-width: 600px) {
+    :root {
+        --page-pad-x: 12px;
+        --page-pad-y: 16px;
+    }
+
+    #home-section {
+        padding-top: 10px;
+    }
+
+    #home-section .hero {
+        padding: 24px 16px 28px;
+    }
+
+    #home-section .hero-title {
+        font-size: clamp(38px, 14vw, 58px);
+    }
+
+    #home-section .hero-purpose {
+        font-size: 15px;
+    }
+
+    #home-section .hero-description {
+        font-size: 13px;
+        line-height: 1.72;
+    }
+
+    #home-section .disease-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #home-section .disease-card:last-child {
+        grid-column: 1 / -1;
+    }
+
+    #scan-section .scan-info {
+        gap: 6px;
+    }
+
+    #scan-section .camera-wrapper {
+        aspect-ratio: 4 / 3;
+    }
+}
+
+/* Very small phones */
+@media (max-width: 380px) {
+    #home-section .disease-grid {
+        grid-template-columns: 1fr;
+    }
+
+    #home-section .disease-card:last-child {
+        grid-column: auto;
+    }
+
+    #scan-section .scan-info {
+        grid-template-columns: 1fr;
+    }
+
+    #scan-section .camera-wrapper {
+        aspect-ratio: 1 / 1;
+    }
+}
+
+/* Wide desktop: avoid over-stretching content */
+@media (min-width: 1440px) {
+    :root {
+        --content-max: 1240px;
+    }
+
+    #home-section .home-content {
+        width: min(1120px, 100%);
+    }
+}
+
+/* Short screens: preserve access to controls instead of clipping them. */
+@media (max-height: 720px) {
+    .page-section {
+        padding-top: 12px;
+        padding-bottom: 80px;
+    }
+
+    #home-section .hero {
+        padding-top: 20px;
+        padding-bottom: 22px;
+    }
+
+    #home-section .hero-title {
+        font-size: clamp(36px, 7vh, 60px);
+    }
+
+    #home-section .disease-grid {
+        margin-top: 18px;
+        margin-bottom: 18px;
+    }
+}
+
+/* Analysis modal: visible immediately after capture and blocks repeat clicks. */
+.analysis-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 7, 12, .82);
+    backdrop-filter: blur(8px);
+}
+.analysis-modal.open { display: flex; }
+.analysis-modal-card {
+    width: min(520px, 92vw);
+    padding: clamp(28px, 5vw, 46px);
+    text-align: center;
+    border: 1px solid rgba(0,234,255,.45);
+    background: rgba(5,18,27,.98);
+    box-shadow: 0 24px 80px rgba(0,0,0,.55);
+}
+.analysis-modal-card h2 {
+    margin: 12px 0 8px;
+    font-size: clamp(22px, 4vw, 32px);
+}
+.analysis-modal-card p { color: var(--muted); line-height: 1.7; }
+.analysis-spinner {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 20px;
+    border: 3px solid rgba(0,234,255,.16);
+    border-top-color: #00eaff;
+    border-radius: 50%;
+    animation: analysisSpin .8s linear infinite;
+}
+@keyframes analysisSpin { to { transform: rotate(360deg); } }
