@@ -348,7 +348,7 @@ function initHelpCenter() {
 
 
     const closeModal = () => {
-        modal.classList.remove("open");
+        if (modal) modal.classList.remove("open");
     };
 
 
@@ -735,12 +735,48 @@ function updateCameraStatus() {
    擷取分析
 ========================= */
 
-document
-    .getElementById("capture-btn")
-    .addEventListener(
-        "click",
-        runAnalysis
-    );
+const captureAnalysisButton =
+    document.getElementById("capture-btn");
+
+let analysisTapLocked = false;
+
+function handleAnalysisTap(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    if (analysisTapLocked) return;
+
+    /*
+     * Do not silently ignore a tap just because the live status loop
+     * temporarily marked the button disabled on mobile Safari.
+     * runAnalysis() performs the authoritative face/eye check and shows
+     * a message when a usable frame is not available.
+     */
+    captureAnalysisButton.disabled = false;
+    analysisTapLocked = true;
+
+    Promise.resolve(runAnalysis())
+        .catch(error => {
+            console.error("Analysis tap error:", error);
+            alert("分析啟動失敗：" + (error?.message || "未知錯誤"));
+        })
+        .finally(() => {
+            analysisTapLocked = false;
+        });
+}
+
+captureAnalysisButton.addEventListener("click", handleAnalysisTap);
+
+/* iOS Safari can occasionally miss a synthesized click on camera UIs. */
+captureAnalysisButton.addEventListener(
+    "touchend",
+    event => {
+        handleAnalysisTap(event);
+    },
+    { passive: false }
+);
 
 
 async function runAnalysis() {
@@ -748,8 +784,6 @@ async function runAnalysis() {
     const captureButton = document.getElementById("capture-btn");
     const modal = document.getElementById("analysis-modal");
     const modalText = document.getElementById("analysis-modal-text");
-
-    if (captureButton.disabled) return;
 
     if (
         !analyzer.latestResults ||
@@ -762,8 +796,9 @@ async function runAnalysis() {
 
     // First action: lock the UI and show feedback immediately.
     captureButton.disabled = true;
-    modal.classList.add("open");
-    modalText.textContent = "正在擷取目前影像……";
+
+    if (modal) modal.classList.add("open");
+    if (modalText) modalText.textContent = "正在擷取目前影像……";
 
     // Give the browser one paint cycle so the click never looks unresponsive.
     await new Promise(resolve =>
@@ -781,7 +816,7 @@ async function runAnalysis() {
         video.pause();
         overlayCanvas.style.visibility = "hidden";
 
-        modalText.textContent = "影像已定格，正在擷取眼部特徵……";
+        if (modalText) modalText.textContent = "影像已定格，正在擷取眼部特徵……";
 
         const features = analyzer.getAnalysisReport();
 
@@ -789,7 +824,7 @@ async function runAnalysis() {
             .toDataURL("image/jpeg", 0.78)
             .split(",")[1];
 
-        modalText.textContent = "特徵分析中，請稍等……";
+        if (modalText) modalText.textContent = "特徵分析中，請稍等……";
 
         const response = await fetch("/api/analyze", {
             method: "POST",
@@ -825,16 +860,16 @@ async function runAnalysis() {
             throw new Error("分析服務沒有回傳有效結果");
         }
 
-        modalText.textContent = "分析完成，正在建立結果……";
+        if (modalText) modalText.textContent = "分析完成，正在建立結果……";
         await delay(180);
 
-        modal.classList.remove("open");
+        if (modal) modal.classList.remove("open");
         displayResult(data, features, imageCanvas);
 
     } catch (error) {
         console.error(error);
 
-        modal.classList.remove("open");
+        if (modal) modal.classList.remove("open");
         overlayCanvas.style.visibility = "visible";
 
         try {
