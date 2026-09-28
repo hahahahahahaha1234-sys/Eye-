@@ -642,10 +642,13 @@ const server =
 
                     const features = payload.features || {};
 
+                    // Wait for Gemini to finish analysing BOTH the visible frame
+                    // and the MediaPipe eye/eyelid close-up before building the response.
                     const result =
                         await analyzeWithGemini(
                             payload.image,
-                            features
+                            features,
+                            payload.eyeCloseup || null
                         );
 
                     const sclera = features.color?.sclera || {};
@@ -656,6 +659,11 @@ const server =
                             Number(sclera.bStar) > 12.0 ||
                             Number(sclera.yellowRatio) >= 12
                         );
+
+                    // A high b* is a yellow-sclera screening signal, not a diagnosis.
+                    // It must force a visible alert and cannot be returned as low risk.
+                    const strongYellowSignal =
+                        scleraReliable && Number(sclera.bStar) > 12.0;
                     const redFlag =
                         scleraReliable && (
                             features.flags?.red === true ||
@@ -706,6 +714,14 @@ const server =
 
                         if (result.level === "低風險") {
                             result.level = redFlag ? "高風險" : "中風險";
+                        }
+
+                        if (strongYellowSignal) {
+                            result.level = result.level === "高風險" ? "高風險" : "中風險";
+                            result.screening.jaundice = {
+                                status: "detected",
+                                evidence: `鞏膜 b*=${sclera.bStar}，高於系統黃色特徵提示門檻 12；此為疑似黃色鞏膜影像特徵，不能單獨確診黃疸。`
+                            };
                         }
 
                         if (!result.finding || !result.finding.includes("黃色")) {
