@@ -867,3 +867,47 @@ button, input, textarea, select {
     user-select: none;
     -webkit-tap-highlight-color: rgba(0, 234, 255, 0.18);
 }
+
+
+/* =========================================================
+   Live eye / iris tracking overlay
+   The video and MediaPipe canvas must occupy the exact same
+   visual box so the HUD coordinates stay aligned on mobile.
+   ========================================================= */
+
+#scan-section .camera-wrapper {
+    position: relative !important;
+    overflow: hidden !important;
+    isolation: isolate;
+}
+
+#scan-section .camera-wrapper video,
+#scan-section #overlay-canvas {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+}
+
+#scan-section .camera-wrapper video {
+    z-index: 1;
+}
+
+#scan-section #overlay-canvas {
+    z-index: 5;
+    pointer-events: none !important;
+}
+
+#scan-section .face-guide,
+#scan-section .hud-corner,
+#scan-section .scan-message {
+    z-index: 6;
+    pointer-events: none !important;
+}
+
+/* Make the eye lock-on readable without hiding the live image. */
+#scan-section #overlay-canvas {
+    filter: drop-shadow(0 0 3px rgba(0, 234, 255, .18));
+}
