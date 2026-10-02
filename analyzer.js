@@ -146,29 +146,220 @@ class EyeAnalyzer {
 
 
     drawEyeRegions(landmarks) {
-        [this.eyeIndices.left, this.eyeIndices.right].forEach(eye => {
-            const contour = eye.contour.map(id => landmarks[id]).filter(Boolean);
+
+        /*
+         * HUD overlay:
+         * 1. 真正沿著眼裂輪廓畫出 EYE CONTOUR
+         * 2. 以輪廓計算外框，讓「眼匡」跟著眼睛移動
+         * 3. 使用 MediaPipe refined iris landmarks 畫出動態 IRIS 圓框
+         * 4. 在虹膜中心畫定位點，讓使用者能清楚看到「眼球」被鎖定
+         */
+
+        [this.eyeIndices.left, this.eyeIndices.right].forEach((eye, eyeIndex) => {
+
+            const contour = eye.contour
+                .map(id => landmarks[id])
+                .filter(Boolean);
+
             if (!contour.length) return;
 
+            // ── Eye contour ─────────────────────────────
             this.ctx.beginPath();
+
             contour.forEach((point, index) => {
+
                 const x = point.x * this.canvas.width;
                 const y = point.y * this.canvas.height;
-                if (index === 0) this.ctx.moveTo(x, y);
-                else this.ctx.lineTo(x, y);
+
+                if (index === 0) {
+                    this.ctx.moveTo(x, y);
+                } else {
+                    this.ctx.lineTo(x, y);
+                }
             });
+
             this.ctx.closePath();
+
             this.ctx.strokeStyle = "#00eaff";
-            this.ctx.lineWidth = 2;
+            this.ctx.lineWidth = Math.max(2, this.canvas.width / 700);
+            this.ctx.shadowColor = "#00eaff";
+            this.ctx.shadowBlur = 8;
             this.ctx.stroke();
 
+            this.ctx.shadowBlur = 0;
+
+            // ── Eye bounding box ───────────────────────
             const box = this.getEyeBoundingBox(landmarks, eye);
-            this.ctx.strokeStyle = "rgba(0,234,255,.78)";
-            this.ctx.lineWidth = 1.5;
-            this.ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+            this.drawHudBox(
+                box.x,
+                box.y,
+                box.width,
+                box.height
+            );
+
+            // ── Iris / eyeball lock-on ─────────────────
+            const irisIds =
+                eyeIndex === 0
+                    ? this.irisIndices.left
+                    : this.irisIndices.right;
+
+            const irisPoints = irisIds
+                .map(id => landmarks[id])
+                .filter(Boolean);
+
+            if (irisPoints.length) {
+
+                const cx =
+                    irisPoints.reduce(
+                        (sum, point) => sum + point.x,
+                        0
+                    ) / irisPoints.length;
+
+                const cy =
+                    irisPoints.reduce(
+                        (sum, point) => sum + point.y,
+                        0
+                    ) / irisPoints.length;
+
+                let radius = 0;
+
+                irisPoints.forEach(point => {
+
+                    radius = Math.max(
+                        radius,
+                        Math.hypot(
+                            point.x - cx,
+                            point.y - cy
+                        )
+                    );
+                });
+
+                // Slightly enlarge the lock-on ring so it visibly surrounds
+                // the entire iris instead of sitting directly on its landmarks.
+                radius *= 1.35;
+
+                const px = cx * this.canvas.width;
+                const py = cy * this.canvas.height;
+                const rx = radius * this.canvas.width;
+                const ry = radius * this.canvas.height;
+
+                this.ctx.save();
+
+                this.ctx.strokeStyle = "#ffffff";
+                this.ctx.lineWidth =
+                    Math.max(2, this.canvas.width / 850);
+                this.ctx.shadowColor = "#00eaff";
+                this.ctx.shadowBlur = 10;
+
+                this.ctx.beginPath();
+                this.ctx.arc(
+                    px,
+                    py,
+                    Math.max(8, (rx + ry) / 2),
+                    0,
+                    Math.PI * 2
+                );
+                this.ctx.stroke();
+
+                // Iris centre target
+                this.ctx.shadowBlur = 0;
+                this.ctx.fillStyle = "#00eaff";
+                this.ctx.beginPath();
+                this.ctx.arc(
+                    px,
+                    py,
+                    Math.max(3, this.canvas.width / 260),
+                    0,
+                    Math.PI * 2
+                );
+                this.ctx.fill();
+
+                // Small crosshair
+                const cross = Math.max(10, this.canvas.width / 100);
+
+                this.ctx.strokeStyle =
+                    "rgba(255,255,255,.92)";
+                this.ctx.lineWidth = 1.5;
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(px - cross, py);
+                this.ctx.lineTo(px - cross / 2, py);
+                this.ctx.moveTo(px + cross / 2, py);
+                this.ctx.lineTo(px + cross, py);
+                this.ctx.moveTo(px, py - cross);
+                this.ctx.lineTo(px, py - cross / 2);
+                this.ctx.moveTo(px, py + cross / 2);
+                this.ctx.lineTo(px, py + cross);
+                this.ctx.stroke();
+
+                this.ctx.restore();
+
+                // Tiny HUD labels beside each lock-on target.
+                this.ctx.save();
+
+                this.ctx.font =
+                    "600 " +
+                    Math.max(11, this.canvas.width / 85) +
+                    "px monospace";
+
+                this.ctx.fillStyle = "#00eaff";
+                this.ctx.shadowColor = "#00eaff";
+                this.ctx.shadowBlur = 6;
+
+                this.ctx.fillText(
+                    eyeIndex === 0 ? "EYE-L" : "EYE-R",
+                    px + Math.max(10, rx * 0.75),
+                    py - Math.max(10, ry * 0.75)
+                );
+
+                this.ctx.restore();
+            }
         });
     }
 
+
+    drawHudBox(x, y, width, height) {
+
+        this.ctx.save();
+
+        this.ctx.strokeStyle =
+            "rgba(0,234,255,.95)";
+
+        this.ctx.lineWidth =
+            Math.max(2, this.canvas.width / 720);
+
+        this.ctx.shadowColor = "#00eaff";
+        this.ctx.shadowBlur = 8;
+
+        // Corner-bracket style bounding box instead of a plain rectangle.
+        const corner =
+            Math.max(
+                12,
+                Math.min(width, height) * 0.18
+            );
+
+        const line = (x1, y1, x2, y2) => {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x1, y1);
+            this.ctx.lineTo(x2, y2);
+            this.ctx.stroke();
+        };
+
+        line(x, y, x + corner, y);
+        line(x, y, x, y + corner);
+
+        line(x + width, y, x + width - corner, y);
+        line(x + width, y, x + width, y + corner);
+
+        line(x, y + height, x + corner, y + height);
+        line(x, y + height, x, y + height - corner);
+
+        line(x + width, y + height, x + width - corner, y + height);
+        line(x + width, y + height, x + width, y + height - corner);
+
+        this.ctx.restore();
+    }
 
     getEyeBoundingBox(landmarks, eye) {
         const points = eye.contour.map(id => landmarks[id]).filter(Boolean);
