@@ -911,3 +911,34 @@ button, input, textarea, select {
 #scan-section #overlay-canvas {
     filter: drop-shadow(0 0 3px rgba(0, 234, 255, .18));
 }
+
+
+/* Final screening result: keep the visual focus on the eyes only. */
+#result-section .result-image,
+#result-section .result-visual,
+#result-section #result-canvas {
+    width: min(100%, 1100px) !important;
+}
+
+#result-section .result-image,
+#result-section .result-visual {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#result-section #result-canvas {
+    display: block;
+    aspect-ratio: 1.62 / 1;
+    object-fit: cover;
+    border: 1px solid rgba(0, 234, 255, 0.38);
+    box-shadow:
+        0 0 42px rgba(0, 200, 255, 0.12),
+        inset 0 0 28px rgba(0, 200, 255, 0.04);
+}
+
+@media (max-width: 700px) {
+    #result-section #result-canvas {
+        width: 100% !important;
+        aspect-ratio: 1.62 / 1;
+    }
+}
