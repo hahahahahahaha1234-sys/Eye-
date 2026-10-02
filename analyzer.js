@@ -1000,40 +1000,228 @@ class EyeAnalyzer {
 
     captureEyeCloseup(sourceCanvas = null) {
         const source = sourceCanvas || this.frozenFrame || this.freezeFrame();
-        const landmarks = this.smoothedLandmarks || this.latestResults?.multiFaceLandmarks?.[0];
+        const landmarks =
+            this.smoothedLandmarks ||
+            this.latestResults?.multiFaceLandmarks?.[0];
+
         if (!landmarks) return null;
 
-        const ids = [
-            ...this.eyeIndices.left.contour,
-            ...this.eyeIndices.right.contour,
-            ...this.irisIndices.left,
-            ...this.irisIndices.right
-        ];
-        const pts = ids.map(id => landmarks[id]).filter(Boolean);
-        if (!pts.length) return null;
+        /*
+         * The camera uses object-fit: cover. First reproduce the exact
+         * visible camera frame, then crop the two eyes from that frame.
+         * This prevents the result image from being stretched or using
+         * a different crop from what the user actually photographed.
+         */
+        const wrapper = this.video.closest(".camera-wrapper");
+        const displayW =
+            wrapper?.clientWidth ||
+            this.video.clientWidth ||
+            source.width;
+        const displayH =
+            wrapper?.clientHeight ||
+            this.video.clientHeight ||
+            source.height;
 
-        let minX = Math.min(...pts.map(p => p.x));
-        let maxX = Math.max(...pts.map(p => p.x));
-        let minY = Math.min(...pts.map(p => p.y));
-        let maxY = Math.max(...pts.map(p => p.y));
+        const sourceRatio = source.width / source.height;
+        const displayRatio = displayW / displayH;
+
+        let sx = 0;
+        let sy = 0;
+        let sw = source.width;
+        let sh = source.height;
+
+        if (sourceRatio > displayRatio) {
+            sw = source.height * displayRatio;
+            sx = (source.width - sw) / 2;
+        } else if (sourceRatio < displayRatio) {
+            sh = source.width / displayRatio;
+            sy = (source.height - sh) / 2;
+        }
+
+        const frameW = Math.max(1, Math.round(sw));
+        const frameH = Math.max(1, Math.round(sh));
+
+        const toFramePoint = point => ({
+            x: (point.x * source.width - sx) * frameW / sw,
+            y: (point.y * source.height - sy) * frameH / sh
+        });
+
+        const eyes = [
+            this.eyeIndices.left,
+            this.eyeIndices.right
+        ];
+
+        const eyeData = eyes.map((eye, eyeIndex) => {
+            const contour =
+                eye.contour
+                    .map(id => landmarks[id])
+                    .filter(Boolean)
+                    .map(toFramePoint);
+
+            const irisIds =
+                eyeIndex === 0
+                    ? this.irisIndices.left
+                    : this.irisIndices.right;
+
+            const iris =
+                irisIds
+                    .map(id => landmarks[id])
+                    .filter(Boolean)
+                    .map(toFramePoint);
+
+            return { contour, iris };
+        });
+
+        const allPoints =
+            eyeData.flatMap(eye => [...eye.contour, ...eye.iris]);
+
+        if (!allPoints.length) return null;
+
+        let minX = Math.min(...allPoints.map(p => p.x));
+        let maxX = Math.max(...allPoints.map(p => p.x));
+        let minY = Math.min(...allPoints.map(p => p.y));
+        let maxY = Math.max(...allPoints.map(p => p.y));
 
         const eyeSpan = maxX - minX;
         const eyeHeight = maxY - minY;
-        // Include eyelids above/below so stye morphology is not cropped away.
-        minX = Math.max(0, minX - eyeSpan * 0.16);
-        maxX = Math.min(1, maxX + eyeSpan * 0.16);
-        minY = Math.max(0, minY - Math.max(eyeHeight * 1.35, eyeSpan * 0.10));
-        maxY = Math.min(1, maxY + Math.max(eyeHeight * 1.35, eyeSpan * 0.10));
 
-        const sx = minX * source.width;
-        const sy = minY * source.height;
-        const sw = (maxX - minX) * source.width;
-        const sh = (maxY - minY) * source.height;
+        minX = Math.max(0, minX - eyeSpan * 0.16);
+        maxX = Math.min(frameW, maxX + eyeSpan * 0.16);
+        minY = Math.max(0, minY - Math.max(eyeHeight * 1.35, eyeSpan * 0.10));
+        maxY = Math.min(frameH, maxY + Math.max(eyeHeight * 1.35, eyeSpan * 0.10));
+
+        const cropW = Math.max(1, Math.round(maxX - minX));
+        const cropH = Math.max(1, Math.round(maxY - minY));
 
         const out = document.createElement("canvas");
-        out.width = Math.max(1, Math.round(sw));
-        out.height = Math.max(1, Math.round(sh));
-        out.getContext("2d").drawImage(source, sx, sy, sw, sh, 0, 0, out.width, out.height);
+        out.width = cropW;
+        out.height = cropH;
+
+        const ctx = out.getContext("2d");
+
+        /*
+         * Draw the exact pixels from the visible camera frame.
+         * The destination uses the same dimensions as the crop, so
+         * there is no forced aspect ratio and therefore no distortion.
+         */
+        ctx.drawImage(
+            source,
+            sx + (minX / frameW) * sw,
+            sy + (minY / frameH) * sh,
+            (cropW / frameW) * sw,
+            (cropH / frameH) * sh,
+            0,
+            0,
+            cropW,
+            cropH
+        );
+
+        /*
+         * Preserve the same HUD geometry visible at capture:
+         * - cyan corner frame around each eye socket
+         * - cyan lock-on circle around each iris/pupil
+         * These are drawn in the cropped result coordinate system.
+         */
+        const drawResultHudBox = (box, corner) => {
+            const x = Math.max(0, box.x);
+            const y = Math.max(0, box.y);
+            const right = Math.min(out.width, box.x + box.width);
+            const bottom = Math.min(out.height, box.y + box.height);
+            const width = right - x;
+            const height = bottom - y;
+
+            if (width <= 2 || height <= 2) return;
+
+            ctx.save();
+            ctx.strokeStyle = "#00eaff";
+            ctx.lineWidth = Math.max(2, out.width / 420);
+            ctx.shadowColor = "#00eaff";
+            ctx.shadowBlur = 8;
+
+            const c =
+                Math.max(10, Math.min(width, height) * 0.22);
+
+            const line = (x1, y1, x2, y2) => {
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            };
+
+            line(x, y, x + c, y);
+            line(x, y, x, y + c);
+            line(right, y, right - c, y);
+            line(right, y, right, y + c);
+            line(x, bottom, x + c, bottom);
+            line(x, bottom, x, bottom - c);
+            line(right, bottom, right - c, bottom);
+            line(right, bottom, right, bottom - c);
+
+            ctx.restore();
+        };
+
+        eyeData.forEach(({ contour, iris }) => {
+            if (contour.length) {
+                const xs = contour.map(p => p.x);
+                const ys = contour.map(p => p.y);
+
+                drawResultHudBox({
+                    x: Math.min(...xs) - minX,
+                    y: Math.min(...ys) - minY,
+                    width: Math.max(...xs) - Math.min(...xs),
+                    height: Math.max(...ys) - Math.min(...ys)
+                });
+            }
+
+            if (iris.length) {
+                const cx =
+                    iris.reduce((sum, p) => sum + p.x, 0) /
+                    iris.length - minX;
+
+                const cy =
+                    iris.reduce((sum, p) => sum + p.y, 0) /
+                    iris.length - minY;
+
+                const radius =
+                    Math.max(
+                        5,
+                        iris.reduce(
+                            (sum, p) =>
+                                sum +
+                                Math.hypot(
+                                    p.x - (cx + minX),
+                                    p.y - (cy + minY)
+                                ),
+                            0
+                        ) / iris.length
+                    );
+
+                ctx.save();
+                ctx.strokeStyle = "#00eaff";
+                ctx.fillStyle = "#00eaff";
+                ctx.lineWidth = Math.max(2, out.width / 500);
+                ctx.shadowColor = "#00eaff";
+                ctx.shadowBlur = 8;
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius * 1.18, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, Math.max(2, radius * 0.12), 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(cx - radius * 1.45, cy);
+                ctx.lineTo(cx + radius * 1.45, cy);
+                ctx.moveTo(cx, cy - radius * 1.45);
+                ctx.lineTo(cx, cy + radius * 1.45);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        });
+
         return out;
     }
 
