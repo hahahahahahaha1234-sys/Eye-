@@ -471,6 +471,196 @@ if (document.readyState === "loading") {
 
 
 /* =========================
+   設定選單
+========================= */
+
+function initSettingsMenu() {
+
+    if (document.getElementById("settings-menu-btn")) {
+        return;
+    }
+
+    const style = document.createElement("style");
+    style.id = "settings-menu-style";
+    style.textContent = `
+        #settings-menu-btn {
+            position: fixed;
+            right: 16px;
+            bottom: max(16px, env(safe-area-inset-bottom));
+            z-index: 9997;
+            width: 52px;
+            height: 52px;
+            border: 1px solid rgba(0, 234, 255, 0.7);
+            border-radius: 50%;
+            color: #00eaff;
+            background: rgba(3, 14, 23, 0.94);
+            font-size: 23px;
+            cursor: pointer;
+            box-shadow: 0 0 28px rgba(0, 234, 255, 0.18);
+        }
+
+        #settings-menu-btn:hover {
+            transform: translateY(-2px);
+            background: rgba(0, 234, 255, 0.10);
+            box-shadow: 0 0 34px rgba(0, 234, 255, 0.30);
+        }
+
+        #settings-menu-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: none;
+            align-items: flex-end;
+            justify-content: flex-end;
+            padding: 84px 18px 82px;
+            background: rgba(0, 5, 10, 0.45);
+        }
+
+        #settings-menu-modal.open {
+            display: flex;
+        }
+
+        .settings-menu-panel {
+            width: min(330px, calc(100vw - 36px));
+            padding: 18px;
+            border: 1px solid rgba(0, 234, 255, 0.35);
+            background:
+                radial-gradient(circle at 80% 0%, rgba(0, 220, 255, 0.08), transparent 45%),
+                rgba(4, 13, 22, 0.98);
+            box-shadow: 0 22px 70px rgba(0, 0, 0, 0.55);
+        }
+
+        .settings-menu-title {
+            margin: 0 0 14px;
+            color: #eafaff;
+            font-size: 18px;
+        }
+
+        .settings-menu-subtitle {
+            margin: 0 0 14px;
+            color: #7f9aaa;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .settings-menu-item {
+            width: 100%;
+            min-height: 52px;
+            margin-top: 9px;
+            padding: 0 15px;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            border: 1px solid rgba(0, 220, 255, 0.20);
+            background: rgba(0, 220, 255, 0.035);
+            color: #eafaff;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .settings-menu-item:hover {
+            border-color: rgba(0, 234, 255, 0.65);
+            background: rgba(0, 220, 255, 0.08);
+        }
+
+        .settings-menu-icon {
+            width: 28px;
+            color: #00eaff;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .settings-menu-item strong {
+            display: block;
+            font-size: 14px;
+        }
+
+        .settings-menu-item span {
+            display: block;
+            margin-top: 2px;
+            color: #7f9aaa;
+            font-size: 10px;
+        }
+
+        @media (max-width: 600px) {
+            #settings-menu-btn {
+                right: 12px;
+                bottom: max(12px, env(safe-area-inset-bottom));
+            }
+
+            #settings-menu-modal {
+                padding-right: 12px;
+                padding-bottom: 76px;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+
+    const button = document.createElement("button");
+    button.id = "settings-menu-btn";
+    button.type = "button";
+    button.setAttribute("aria-label", "設定");
+    button.title = "設定";
+    button.textContent = "⚙";
+
+    const modal = document.createElement("div");
+    modal.id = "settings-menu-modal";
+    modal.innerHTML = `
+        <div class="settings-menu-panel" role="dialog" aria-label="設定">
+            <div class="section-label">SYSTEM SETTINGS</div>
+            <h3 class="settings-menu-title">設定</h3>
+            <p class="settings-menu-subtitle">快速開啟系統說明與歷史檢測紀錄。</p>
+
+            <button class="settings-menu-item" id="settings-help-btn" type="button">
+                <span class="settings-menu-icon">?</span>
+                <span>
+                    <strong>說明</strong>
+                    <span>查看疾病衛教與系統使用方式</span>
+                </span>
+            </button>
+
+            <button class="settings-menu-item" id="settings-history-btn" type="button">
+                <span class="settings-menu-icon">◷</span>
+                <span>
+                    <strong>歷史紀錄</strong>
+                    <span>查看過去的照片與完整初篩結果</span>
+                </span>
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(button);
+    document.body.appendChild(modal);
+
+    const close = () => modal.classList.remove("open");
+
+    button.addEventListener("click", () => {
+        modal.classList.toggle("open");
+    });
+
+    modal.addEventListener("click", event => {
+        if (event.target === modal) close();
+    });
+
+    document.getElementById("settings-help-btn").addEventListener("click", () => {
+        close();
+        document.getElementById("help-center-btn")?.click();
+    });
+
+    document.getElementById("settings-history-btn").addEventListener("click", () => {
+        close();
+        showHistory();
+    });
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initSettingsMenu);
+} else {
+    initSettingsMenu();
+}
+
+
+/* =========================
    首頁
 ========================= */
 
@@ -1065,7 +1255,8 @@ function displayResult(
 
     saveReport(
         report,
-        features
+        features,
+        sourceCanvas
     );
 }
 
@@ -1118,7 +1309,8 @@ function normalizeRisk(level) {
 
 function saveReport(
     report,
-    features
+    features,
+    imageCanvas = null
 ) {
 
     const history =
@@ -1128,8 +1320,25 @@ function saveReport(
             ) || "[]"
         );
 
+    /*
+     * Store the actual result image together with the analysis data.
+     * JPEG keeps localStorage usage manageable while preserving the
+     * eye HUD frame shown on the result page.
+     */
+    let image = null;
+
+    if (imageCanvas) {
+        try {
+            image = imageCanvas.toDataURL("image/jpeg", 0.78);
+        } catch (error) {
+            console.warn("Unable to save history image:", error);
+        }
+    }
 
     history.unshift({
+
+        id:
+            Date.now(),
 
         time:
             new Date()
@@ -1145,6 +1354,18 @@ function saveReport(
             report.finding ||
             "",
 
+        desc:
+            report.desc ||
+            "",
+
+        advice:
+            report.advice ||
+            "",
+
+        screening:
+            report.screening ||
+            {},
+
         aStar:
             features.color?.aStar,
 
@@ -1152,14 +1373,22 @@ function saveReport(
             features.color?.bStar,
 
         lStar:
-            features.color?.lStar
+            features.color?.lStar,
+
+        redRatio:
+            features.color?.redRatio,
+
+        image
     });
 
-
+    /*
+     * Keep the newest five complete records so photos and full reports
+     * do not consume excessive browser storage.
+     */
     localStorage.setItem(
         "eyeHistory",
         JSON.stringify(
-            history.slice(0, 10)
+            history.slice(0, 5)
         )
     );
 }
@@ -1201,12 +1430,10 @@ function showHistory() {
         "history-section"
     );
 
-
     const container =
         document.getElementById(
             "history-list"
         );
-
 
     const history =
         JSON.parse(
@@ -1214,7 +1441,6 @@ function showHistory() {
                 "eyeHistory"
             ) || "[]"
         );
-
 
     if (!history.length) {
 
@@ -1227,37 +1453,111 @@ function showHistory() {
         return;
     }
 
+    const labels = {
+        jaundice: "黃疸／黃色鞏膜",
+        conjunctivitis: "急性結膜炎",
+        stye: "針眼／麥粒腫",
+        cataract: "白內障樣混濁",
+        arcus: "角膜老年環"
+    };
+
+    const statusText = {
+        detected: "疑似特徵",
+        not_detected: "未見明顯特徵",
+        uncertain: "無法可靠判讀"
+    };
 
     container.innerHTML =
-        history.map(
-            item => `
+        history.map(item => {
 
-                <div class="history-card">
+            const screeningRows =
+                Object.entries(labels)
+                    .map(([key, label]) => {
 
-                    <div>
-                        <strong>
-                            ${escapeHTML(
-                                item.level
-                            )}
-                        </strong>
+                        const result =
+                            item.screening?.[key];
 
-                        <span>
-                            ${escapeHTML(
-                                item.time
-                            )}
-                        </span>
+                        const status =
+                            statusText[result?.status] ||
+                            "無資料";
+
+                        const evidence =
+                            result?.evidence ||
+                            "未取得判讀依據";
+
+                        return `
+                            <div class="history-screening-row">
+                                <strong>${escapeHTML(label)}｜${escapeHTML(status)}</strong>
+                                <span>${escapeHTML(evidence)}</span>
+                            </div>
+                        `;
+                    })
+                    .join("");
+
+            return `
+                <article class="history-card history-card-full">
+
+                    <div class="history-card-header">
+                        <div>
+                            <div class="history-card-time">
+                                ${escapeHTML(item.time)}
+                            </div>
+                            <strong class="history-card-level">
+                                ${escapeHTML(item.level)}
+                            </strong>
+                        </div>
                     </div>
 
-                    <p>
-                        ${escapeHTML(
-                            item.finding
-                        )}
-                    </p>
+                    ${item.image
+                        ? `
+                            <div class="history-image-wrap">
+                                <img
+                                    src="${item.image}"
+                                    alt="歷史眼部檢測影像"
+                                    class="history-image"
+                                >
+                            </div>
+                        `
+                        : `
+                            <div class="history-image-missing">
+                                此筆紀錄沒有儲存影像
+                            </div>
+                        `
+                    }
 
-                </div>
+                    <div class="history-result-section">
+                        <div class="history-result-block">
+                            <h4>主要觀察</h4>
+                            <p>${escapeHTML(item.finding || "尚無資料")}</p>
+                        </div>
 
-            `
-        ).join("");
+                        <div class="history-result-block">
+                            <h4>系統說明</h4>
+                            <p>${escapeHTML(item.desc || "尚無資料")}</p>
+                        </div>
+
+                        <div class="history-result-block">
+                            <h4>建議</h4>
+                            <p>${escapeHTML(item.advice || "尚無資料")}</p>
+                        </div>
+
+                        <div class="history-result-block">
+                            <h4>五項初篩</h4>
+                            <div class="history-screening">
+                                ${screeningRows}
+                            </div>
+                        </div>
+
+                        <div class="history-feature-row">
+                            <span>a* ${escapeHTML(item.aStar ?? "--")}</span>
+                            <span>b* ${escapeHTML(item.bStar ?? "--")}</span>
+                            <span>L* ${escapeHTML(item.lStar ?? "--")}</span>
+                            <span>RED ${escapeHTML(item.redRatio ?? "--")}</span>
+                        </div>
+                    </div>
+                </article>
+            `;
+        }).join("");
 }
 
 
