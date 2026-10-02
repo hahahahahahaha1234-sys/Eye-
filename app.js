@@ -1425,139 +1425,58 @@ document
 
 
 function showHistory() {
-
-    showSection(
-        "history-section"
-    );
-
-    const container =
-        document.getElementById(
-            "history-list"
-        );
-
-    const history =
-        JSON.parse(
-            localStorage.getItem(
-                "eyeHistory"
-            ) || "[]"
-        );
-
-    if (!history.length) {
-
-        container.innerHTML = `
-            <div class="empty-history">
-                尚無檢測紀錄
-            </div>
-        `;
-
+    showSection("history-section");
+    const container=document.getElementById("history-list");
+    const history=JSON.parse(localStorage.getItem("eyeHistory")||"[]");
+    if(!history.length){
+        container.innerHTML='<div class="empty-history">尚無檢測紀錄</div>';
         return;
     }
+    container.innerHTML=history.map((item,index)=>{
+        const risk=normalizeRisk(item.level);
+        return `<button type="button" class="history-list-item" data-history-index="${index}">
+            <span class="history-list-main">
+                <span class="history-list-date">${escapeHTML(item.time)}</span>
+                <strong>${escapeHTML(item.finding||"影像初篩完成")}</strong>
+            </span>
+            <span class="history-list-side">
+                <span class="history-list-risk ${risk.className}">${escapeHTML(risk.text)}</span>
+                <span class="history-list-arrow">›</span>
+            </span>
+        </button>`;
+    }).join("");
+    container.querySelectorAll(".history-list-item").forEach(el=>{
+        el.addEventListener("click",()=>showHistoryDetail(history[Number(el.dataset.historyIndex)]));
+    });
+}
 
-    const labels = {
-        jaundice: "黃疸／黃色鞏膜",
-        conjunctivitis: "急性結膜炎",
-        stye: "針眼／麥粒腫",
-        cataract: "白內障樣混濁",
-        arcus: "角膜老年環"
-    };
-
-    const statusText = {
-        detected: "疑似特徵",
-        not_detected: "未見明顯特徵",
-        uncertain: "無法可靠判讀"
-    };
-
-    container.innerHTML =
-        history.map(item => {
-
-            const screeningRows =
-                Object.entries(labels)
-                    .map(([key, label]) => {
-
-                        const result =
-                            item.screening?.[key];
-
-                        const status =
-                            statusText[result?.status] ||
-                            "無資料";
-
-                        const evidence =
-                            result?.evidence ||
-                            "未取得判讀依據";
-
-                        return `
-                            <div class="history-screening-row">
-                                <strong>${escapeHTML(label)}｜${escapeHTML(status)}</strong>
-                                <span>${escapeHTML(evidence)}</span>
-                            </div>
-                        `;
-                    })
-                    .join("");
-
-            return `
-                <article class="history-card history-card-full">
-
-                    <div class="history-card-header">
-                        <div>
-                            <div class="history-card-time">
-                                ${escapeHTML(item.time)}
-                            </div>
-                            <strong class="history-card-level">
-                                ${escapeHTML(item.level)}
-                            </strong>
-                        </div>
-                    </div>
-
-                    ${item.image
-                        ? `
-                            <div class="history-image-wrap">
-                                <img
-                                    src="${item.image}"
-                                    alt="歷史眼部檢測影像"
-                                    class="history-image"
-                                >
-                            </div>
-                        `
-                        : `
-                            <div class="history-image-missing">
-                                此筆紀錄沒有儲存影像
-                            </div>
-                        `
-                    }
-
-                    <div class="history-result-section">
-                        <div class="history-result-block">
-                            <h4>主要觀察</h4>
-                            <p>${escapeHTML(item.finding || "尚無資料")}</p>
-                        </div>
-
-                        <div class="history-result-block">
-                            <h4>系統說明</h4>
-                            <p>${escapeHTML(item.desc || "尚無資料")}</p>
-                        </div>
-
-                        <div class="history-result-block">
-                            <h4>建議</h4>
-                            <p>${escapeHTML(item.advice || "尚無資料")}</p>
-                        </div>
-
-                        <div class="history-result-block">
-                            <h4>五項初篩</h4>
-                            <div class="history-screening">
-                                ${screeningRows}
-                            </div>
-                        </div>
-
-                        <div class="history-feature-row">
-                            <span>a* ${escapeHTML(item.aStar ?? "--")}</span>
-                            <span>b* ${escapeHTML(item.bStar ?? "--")}</span>
-                            <span>L* ${escapeHTML(item.lStar ?? "--")}</span>
-                            <span>RED ${escapeHTML(item.redRatio ?? "--")}</span>
-                        </div>
-                    </div>
-                </article>
-            `;
-        }).join("");
+function showHistoryDetail(item) {
+    if(!item) return;
+    let modal=document.getElementById("history-detail-modal");
+    if(!modal){
+        modal=document.createElement("div");
+        modal.id="history-detail-modal";
+        modal.className="history-detail-modal";
+        modal.innerHTML=`<div class="history-detail-panel"><div class="history-detail-header"><div><div class="section-label">SCREENING HISTORY / DETAIL</div><h3>檢測紀錄詳細結果</h3></div><button type="button" class="history-detail-close">×</button></div><div id="history-detail-content"></div></div>`;
+        document.body.appendChild(modal);
+        modal.querySelector(".history-detail-close").onclick=()=>modal.classList.remove("open");
+        modal.onclick=e=>{if(e.target===modal) modal.classList.remove("open");};
+    }
+    const labels={jaundice:"黃疸／黃色鞏膜",conjunctivitis:"急性結膜炎",stye:"針眼／麥粒腫",cataract:"白內障樣混濁",arcus:"角膜老年環"};
+    const status={detected:"疑似特徵",not_detected:"未見明顯特徵",uncertain:"無法可靠判讀"};
+    const rows=Object.entries(labels).map(([k,label])=>{
+        const x=item.screening?.[k];
+        return `<div class="history-screening-row"><strong>${escapeHTML(label)}｜${escapeHTML(status[x?.status]||"無資料")}</strong><span>${escapeHTML(x?.evidence||"未取得判讀依據")}</span></div>`;
+    }).join("");
+    document.getElementById("history-detail-content").innerHTML=`
+        <div class="history-detail-meta"><span>${escapeHTML(item.time||"")}</span><strong>${escapeHTML(normalizeRisk(item.level).text)}</strong></div>
+        ${item.image?`<div class="history-detail-image-wrap"><img src="${item.image}" alt="歷史眼部檢測影像" class="history-detail-image"></div>`:'<div class="history-image-missing">此筆紀錄沒有儲存影像</div>'}
+        <div class="history-detail-block"><h4>主要觀察</h4><p>${escapeHTML(item.finding||"尚無資料")}</p></div>
+        <div class="history-detail-block"><h4>系統說明</h4><p>${escapeHTML(item.desc||"尚無資料")}</p></div>
+        <div class="history-detail-block"><h4>建議</h4><p>${escapeHTML(item.advice||"尚無資料")}</p></div>
+        <div class="history-detail-block"><h4>五項初篩</h4><div class="history-screening">${rows}</div></div>
+        <div class="history-feature-row"><span>a* ${escapeHTML(item.aStar??"--")}</span><span>b* ${escapeHTML(item.bStar??"--")}</span><span>L* ${escapeHTML(item.lStar??"--")}</span><span>RED ${escapeHTML(item.redRatio??"--")}</span></div>`;
+    modal.classList.add("open");
 }
 
 
