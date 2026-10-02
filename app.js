@@ -849,7 +849,7 @@ async function runAnalysis(event) {
         }
 
         if (modal) modal.classList.remove("open");
-        displayResult(data, features, imageCanvas);
+        displayResult(data, features, imageCanvas, eyeCloseupCanvas);
 
     } catch (error) {
         console.error("Capture / analysis failed:", error);
@@ -893,7 +893,8 @@ function escapeHtml(value) {
 function displayResult(
     report,
     features,
-    imageCanvas
+    imageCanvas,
+    capturedEyeCloseup = null
 ) {
 
     showSection(
@@ -995,42 +996,29 @@ function displayResult(
      * eye close-up. The image is enlarged by CSS without stretching.
      * The same eye-frame ratio used during capture is retained.
      */
-    const eyeCloseup =
-        analyzer.captureEyeCloseup(imageCanvas);
-
+    /*
+     * Use the exact eye close-up captured at the moment the user
+     * pressed the shutter. It already contains the same eye-socket
+     * and iris/pupil HUD frames, so the analysis page does not
+     * recalculate or stretch the image.
+     */
     const sourceCanvas =
-        eyeCloseup || imageCanvas;
-
-    const eyeResultCanvas =
-        document.createElement("canvas");
-
-    eyeResultCanvas.width =
-        sourceCanvas.width;
-
-    eyeResultCanvas.height =
-        sourceCanvas.height;
-
-    const eyeCtx =
-        eyeResultCanvas.getContext("2d");
-
-    eyeCtx.drawImage(
-        sourceCanvas,
-        0,
-        0
-    );
+        capturedEyeCloseup || imageCanvas;
 
     resultCanvas.width =
-        eyeResultCanvas.width;
+        sourceCanvas.width;
 
     resultCanvas.height =
-        eyeResultCanvas.height;
+        sourceCanvas.height;
 
     resultCanvas
         .getContext("2d")
         .drawImage(
-            eyeResultCanvas,
+            sourceCanvas,
             0,
-            0
+            0,
+            sourceCanvas.width,
+            sourceCanvas.height
         );
 
 
