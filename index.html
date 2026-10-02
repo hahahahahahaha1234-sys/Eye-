@@ -694,6 +694,62 @@
         </div>
     </section>
 
+    <section id="history-detail-section" class="page-section hidden">
+        <div class="result-panel history-result-panel">
+            <div class="section-label">SCREENING HISTORY / DETAIL</div>
+            <div class="history-detail-title-row">
+                <div>
+                    <h2>歷史初篩報告</h2>
+                    <p id="history-detail-time" class="history-detail-time"></p>
+                </div>
+                <div id="history-detail-risk" class="risk-indicator low">
+                    SCREENING LEVEL <strong id="history-detail-level">低風險</strong>
+                </div>
+            </div>
+
+            <div class="result-image history-result-image">
+                <img id="history-detail-image" class="hidden" alt="歷史眼部檢測影像">
+                <div id="history-detail-image-missing" class="history-image-missing hidden">此筆紀錄沒有儲存影像</div>
+            </div>
+
+            <div class="result-content">
+                <div class="result-block">
+                    <h3>主要觀察</h3>
+                    <p id="history-detail-finding">尚無資料</p>
+                </div>
+                <div class="result-block">
+                    <h3>系統說明</h3>
+                    <p id="history-detail-description">尚無資料</p>
+                </div>
+                <div class="result-block">
+                    <h3>建議</h3>
+                    <p id="history-detail-advice">尚無資料</p>
+                </div>
+                <div class="result-block">
+                    <h3>五項初篩</h3>
+                    <div id="history-detail-screening" class="history-screening"></div>
+                </div>
+                <div class="result-block">
+                    <h3>影像特徵</h3>
+                    <div class="feature-grid">
+                        <div class="feature-card"><span>a*</span><strong id="history-detail-a">--</strong><small>紅綠軸</small></div>
+                        <div class="feature-card"><span>b*</span><strong id="history-detail-b">--</strong><small>黃藍軸</small></div>
+                        <div class="feature-card"><span>L*</span><strong id="history-detail-l">--</strong><small>亮度</small></div>
+                        <div class="feature-card"><span>RED</span><strong id="history-detail-red">--</strong><small>紅色比例</small></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-actions">
+                <button id="back-history-list-btn" class="secondary-btn">返回歷史紀錄</button>
+            </div>
+
+            <p class="medical-note">
+                本結果屬於當次影像初篩紀錄，不代表疾病確診。
+            </p>
+        </div>
+    </section>
+
 </div>
 
 <script src="analyzer.js"></script>
