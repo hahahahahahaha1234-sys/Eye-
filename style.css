@@ -928,17 +928,22 @@ button, input, textarea, select {
 
 #result-section #result-canvas {
     display: block;
-    aspect-ratio: 1.62 / 1;
-    object-fit: cover;
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: auto !important;
+    object-fit: contain !important;
     border: 1px solid rgba(0, 234, 255, 0.38);
     box-shadow:
         0 0 42px rgba(0, 200, 255, 0.12),
         inset 0 0 28px rgba(0, 200, 255, 0.04);
+    image-rendering: auto;
 }
 
 @media (max-width: 700px) {
     #result-section #result-canvas {
         width: 100% !important;
-        aspect-ratio: 1.62 / 1;
+        height: auto !important;
+        aspect-ratio: auto !important;
+        object-fit: contain !important;
     }
 }
