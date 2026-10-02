@@ -990,65 +990,34 @@ function displayResult(
      * Do not display the full face here: the final report should
      * focus the viewer on the actual screening region.
      */
+    /*
+     * Final result keeps the exact aspect ratio of the captured
+     * eye close-up. The image is enlarged by CSS without stretching.
+     * The same eye-frame ratio used during capture is retained.
+     */
+    const eyeCloseup =
+        analyzer.captureEyeCloseup(imageCanvas);
+
+    const sourceCanvas =
+        eyeCloseup || imageCanvas;
+
     const eyeResultCanvas =
         document.createElement("canvas");
 
     eyeResultCanvas.width =
-        Math.max(720, imageCanvas.width);
+        sourceCanvas.width;
 
     eyeResultCanvas.height =
-        Math.round(
-            eyeResultCanvas.width * 0.62
-        );
+        sourceCanvas.height;
 
     const eyeCtx =
         eyeResultCanvas.getContext("2d");
 
-    eyeCtx.fillStyle = "#02070d";
-    eyeCtx.fillRect(
+    eyeCtx.drawImage(
+        sourceCanvas,
         0,
-        0,
-        eyeResultCanvas.width,
-        eyeResultCanvas.height
+        0
     );
-
-    const eyeCloseup =
-        analyzer.captureEyeCloseup(imageCanvas);
-
-    if (eyeCloseup) {
-
-        eyeCtx.drawImage(
-            eyeCloseup,
-            0,
-            0,
-            eyeCloseup.width,
-            eyeCloseup.height,
-            0,
-            0,
-            eyeResultCanvas.width,
-            eyeResultCanvas.height
-        );
-
-    } else {
-
-        // Fallback: crop the central eye band from the captured frame.
-        const sx = Math.round(imageCanvas.width * 0.08);
-        const sy = Math.round(imageCanvas.height * 0.24);
-        const sw = Math.round(imageCanvas.width * 0.84);
-        const sh = Math.round(imageCanvas.height * 0.42);
-
-        eyeCtx.drawImage(
-            imageCanvas,
-            sx,
-            sy,
-            sw,
-            sh,
-            0,
-            0,
-            eyeResultCanvas.width,
-            eyeResultCanvas.height
-        );
-    }
 
     resultCanvas.width =
         eyeResultCanvas.width;
