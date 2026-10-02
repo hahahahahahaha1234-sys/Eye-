@@ -22,7 +22,8 @@ const sections = [
     "scan-section",
     "loading-section",
     "result-section",
-    "history-section"
+    "history-section",
+    "history-detail-section"
 ];
 
 
@@ -1451,33 +1452,74 @@ function showHistory() {
 }
 
 function showHistoryDetail(item) {
-    if(!item) return;
-    let modal=document.getElementById("history-detail-modal");
-    if(!modal){
-        modal=document.createElement("div");
-        modal.id="history-detail-modal";
-        modal.className="history-detail-modal";
-        modal.innerHTML=`<div class="history-detail-panel"><div class="history-detail-header"><div><div class="section-label">SCREENING HISTORY / DETAIL</div><h3>檢測紀錄詳細結果</h3></div><button type="button" class="history-detail-close">×</button></div><div id="history-detail-content"></div></div>`;
-        document.body.appendChild(modal);
-        modal.querySelector(".history-detail-close").onclick=()=>modal.classList.remove("open");
-        modal.onclick=e=>{if(e.target===modal) modal.classList.remove("open");};
+    if (!item) return;
+
+    /*
+     * History detail is a real app page, not a modal.  Reuse the same
+     * report language and visual hierarchy as the live analysis result.
+     */
+    const risk = normalizeRisk(item.level);
+    document.getElementById("history-detail-risk").className =
+        `risk-indicator ${risk.className}`;
+    document.getElementById("history-detail-level").textContent = risk.text;
+    document.getElementById("history-detail-time").textContent = item.time || "";
+    document.getElementById("history-detail-finding").textContent =
+        item.finding || "尚無資料";
+    document.getElementById("history-detail-description").textContent =
+        item.desc || "尚無資料";
+    document.getElementById("history-detail-advice").textContent =
+        item.advice || "尚無資料";
+
+    const image = document.getElementById("history-detail-image");
+    const imageMissing = document.getElementById("history-detail-image-missing");
+    if (item.image) {
+        image.src = item.image;
+        image.classList.remove("hidden");
+        imageMissing.classList.add("hidden");
+    } else {
+        image.removeAttribute("src");
+        image.classList.add("hidden");
+        imageMissing.classList.remove("hidden");
     }
-    const labels={jaundice:"黃疸／黃色鞏膜",conjunctivitis:"急性結膜炎",stye:"針眼／麥粒腫",cataract:"白內障樣混濁",arcus:"角膜老年環"};
-    const status={detected:"疑似特徵",not_detected:"未見明顯特徵",uncertain:"無法可靠判讀"};
-    const rows=Object.entries(labels).map(([k,label])=>{
-        const x=item.screening?.[k];
-        return `<div class="history-screening-row"><strong>${escapeHTML(label)}｜${escapeHTML(status[x?.status]||"無資料")}</strong><span>${escapeHTML(x?.evidence||"未取得判讀依據")}</span></div>`;
-    }).join("");
-    document.getElementById("history-detail-content").innerHTML=`
-        <div class="history-detail-meta"><span>${escapeHTML(item.time||"")}</span><strong>${escapeHTML(normalizeRisk(item.level).text)}</strong></div>
-        ${item.image?`<div class="history-detail-image-wrap"><img src="${item.image}" alt="歷史眼部檢測影像" class="history-detail-image"></div>`:'<div class="history-image-missing">此筆紀錄沒有儲存影像</div>'}
-        <div class="history-detail-block"><h4>主要觀察</h4><p>${escapeHTML(item.finding||"尚無資料")}</p></div>
-        <div class="history-detail-block"><h4>系統說明</h4><p>${escapeHTML(item.desc||"尚無資料")}</p></div>
-        <div class="history-detail-block"><h4>建議</h4><p>${escapeHTML(item.advice||"尚無資料")}</p></div>
-        <div class="history-detail-block"><h4>五項初篩</h4><div class="history-screening">${rows}</div></div>
-        <div class="history-feature-row"><span>a* ${escapeHTML(item.aStar??"--")}</span><span>b* ${escapeHTML(item.bStar??"--")}</span><span>L* ${escapeHTML(item.lStar??"--")}</span><span>RED ${escapeHTML(item.redRatio??"--")}</span></div>`;
-    modal.classList.add("open");
+
+    const labels = {
+        jaundice: "黃疸／黃色鞏膜",
+        conjunctivitis: "急性結膜炎",
+        stye: "針眼／麥粒腫",
+        cataract: "白內障樣混濁",
+        arcus: "角膜老年環"
+    };
+    const status = {
+        detected: "疑似特徵",
+        not_detected: "未見明顯特徵",
+        uncertain: "無法可靠判讀"
+    };
+
+    document.getElementById("history-detail-screening").innerHTML =
+        Object.entries(labels).map(([key, label]) => {
+            const result = item.screening?.[key];
+            return `<div class="history-screening-row">
+                <strong>${escapeHTML(label)}｜${escapeHTML(status[result?.status] || "無資料")}</strong>
+                <span>${escapeHTML(result?.evidence || "未取得判讀依據")}</span>
+            </div>`;
+        }).join("");
+
+    document.getElementById("history-detail-a").textContent = item.aStar ?? "--";
+    document.getElementById("history-detail-b").textContent = item.bStar ?? "--";
+    document.getElementById("history-detail-l").textContent = item.lStar ?? "--";
+    document.getElementById("history-detail-red").textContent =
+        item.redRatio !== undefined && item.redRatio !== null
+            ? `${item.redRatio}%`
+            : "--";
+
+    showSection("history-detail-section");
+    window.scrollTo({ top: 0, behavior: "instant" });
 }
+
+
+document
+    .getElementById("back-history-list-btn")
+    .addEventListener("click", showHistory);
 
 
 /* =========================
